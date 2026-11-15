@@ -52,11 +52,11 @@ jobs:
             --set relay.enabled=false > /tmp/one.yaml
           grep -c '^kind: Deployment' /tmp/split.yaml | grep -qx 7
           grep -c '^kind: Deployment' /tmp/one.yaml | grep -qx 1
-      - name: Install into a kind cluster and wait for it
+      - name: Start a kind cluster
+        uses: helm/kind-action@v1
+      - name: Install into the cluster and wait for it
         run: |
           set -eu
-          curl -fsSLo /usr/local/bin/kind https://kind.sigs.k8s.io/dl/latest/kind-linux-amd64 && chmod +x /usr/local/bin/kind
-          kind create cluster --wait 120s
           helm install t charts/craft-studio --set publicUrl=http://localhost:8080 --wait --timeout 10m
           kubectl get pods
           kubectl port-forward svc/t-craft-studio 8080:8080 >/dev/null 2>&1 &
