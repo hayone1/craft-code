@@ -33,7 +33,6 @@ deploy file, deploy once by hand with the button and follow "After the deploy" i
 ## Publish the Helm chart
 
 Raise `version` in `charts/craft-studio/Chart.yaml`. The `publish-chart` job pushes the new
-version to `oci://ghcr.io/hayone1/charts/craft-studio` when the change reaches `main`. GitHub makes
-a new package private. After the first push, open the package on GitHub (**Packages** >
-**charts/craft-studio** > **Package settings**) and change the visibility to **Public**, so that
-`helm install` works without signing in.
+version to `oci://ghcr.io/hayone1/charts/craft-studio` when the change reaches `main`. The
+package is linked to this public repository, so the package is public too, and `helm install`
+works without signing in.
