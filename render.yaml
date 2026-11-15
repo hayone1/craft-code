@@ -1,0 +1,18 @@
+# Render Blueprint: the "Deploy to Render" button reads this file. One web service from the
+# hayone/craft-studio image, with a disk for /home/coder. Disks need a paid instance type.
+services:
+  - type: web
+    name: craft-studio
+    runtime: image
+    image:
+      url: docker.io/hayone/craft-studio:latest
+    plan: standard
+    healthCheckPath: /healthz
+    disk:
+      name: home
+      mountPath: /home/coder
+      sizeGB: 10
+    envVars:
+      # The sign-in password: Render makes one. Find it under the service's Environment tab.
+      - key: PASSWORD
+        generateValue: true

@@ -1,0 +1,18 @@
+# The craft app pages as a static site (static/build.mjs). Netlify serves files only, so this
+# deploys the apps and nothing else: no VS Code, no relay. See README.md.
+[build]
+  command = "node static/build.mjs public"
+  publish = "public"
+
+[build.environment]
+  NODE_VERSION = "22"
+
+[[headers]]
+  for = "/*/_embed/config.json"
+  [headers.values]
+    Cache-Control = "no-store"
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Content-Type-Options = "nosniff"

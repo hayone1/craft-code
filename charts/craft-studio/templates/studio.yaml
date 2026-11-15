@@ -1,0 +1,125 @@
+{{- $full := include "craft-studio.fullname" . }}
+{{- $secret := include "craft-studio.secretName" . }}
+{{- $sel := dict "root" . "name" "studio" }}
+{{- if and .Values.studio.persistence.enabled (not .Values.studio.persistence.existingClaim) }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ $full }}-home
+  labels:
+    {{- include "craft-studio.labels" . | nindent 4 }}
+  annotations:
+    # helm uninstall leaves the home folder; delete the claim yourself to drop it.
+    helm.sh/resource-policy: keep
+spec:
+  accessModes: [ReadWriteOnce]
+  {{- with .Values.studio.persistence.storageClass }}
+  storageClassName: {{ . }}
+  {{- end }}
+  resources:
+    requests:
+      storage: {{ .Values.studio.persistence.size }}
+---
+{{- end }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ $full }}
+  labels:
+    {{- include "craft-studio.labels" . | nindent 4 }}
+    app.kubernetes.io/name: studio
+spec:
+  replicas: 1
+  # The home volume is ReadWriteOnce: the old pod stops before the new one starts.
+  strategy: { type: Recreate }
+  selector:
+    matchLabels:
+      {{- include "craft-studio.selector" $sel | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "craft-studio.labels" . | nindent 8 }}
+        app.kubernetes.io/name: studio
+      annotations:
+        checksum/values: {{ toJson .Values | sha256sum | trunc 16 }}
+    spec:
+      automountServiceAccountToken: false
+      enableServiceLinks: false
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: studio
+          image: "{{ .Values.studio.image.repository }}:{{ .Values.studio.image.tag }}"
+          imagePullPolicy: {{ .Values.studio.image.pullPolicy }}
+          ports:
+            - { name: http, containerPort: 8080 }
+          env:
+            - { name: PUBLIC_URL, value: {{ include "craft-studio.publicUrl" . | quote }} }
+            - { name: AUTH, value: {{ .Values.auth.mode | quote }} }
+            {{- if eq .Values.auth.mode "password" }}
+            - name: PASSWORD
+              valueFrom: { secretKeyRef: { name: {{ $secret }}, key: password } }
+            {{- end }}
+            {{- if .Values.apps.enabled }}
+            # The extension puts each app's name in place of {app}.
+            - { name: CRAFT_APP_URL, value: "http://{{ $full }}-{app}:8080/" }
+            - { name: CRAFT_APPS, value: {{ join "," .Values.apps.names | quote }} }
+            {{- end }}
+            {{- if .Values.relay.enabled }}
+            - { name: CRAFT_RELAY_URL, value: "http://{{ $full }}-relay:8080" }
+            - { name: RELAY_UPSTREAM, value: "{{ $full }}-relay:8080" }
+            - name: CRAFT_RELAY_TOKEN
+              valueFrom: { secretKeyRef: { name: {{ $secret }}, key: mint-token } }
+            {{- else }}
+            - name: MCP_KEY
+              valueFrom: { secretKeyRef: { name: {{ $secret }}, key: mcp-key } }
+            {{- end }}
+            {{- with .Values.studio.extensions }}
+            - { name: EXTENSIONS, value: {{ . | quote }} }
+            {{- end }}
+            {{- range $k, $v := .Values.studio.env }}
+            - { name: {{ $k }}, value: {{ $v | quote }} }
+            {{- end }}
+          readinessProbe:
+            httpGet: { path: /healthz, port: http }
+            periodSeconds: 10
+          livenessProbe:
+            httpGet: { path: /healthz, port: http }
+            initialDelaySeconds: 30
+            periodSeconds: 30
+          resources:
+            {{- toYaml .Values.studio.resources | nindent 12 }}
+          volumeMounts:
+            - { name: home, mountPath: /home/coder }
+      volumes:
+        - name: home
+          {{- if .Values.studio.persistence.enabled }}
+          persistentVolumeClaim:
+            claimName: {{ .Values.studio.persistence.existingClaim | default (printf "%s-home" $full) }}
+          {{- else }}
+          emptyDir: {}
+          {{- end }}
+      {{- with .Values.studio.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.studio.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.studio.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ $full }}
+  labels:
+    {{- include "craft-studio.labels" . | nindent 4 }}
+spec:
+  selector:
+    {{- include "craft-studio.selector" $sel | nindent 4 }}
+  ports:
+    - { name: http, port: 8080, targetPort: http }

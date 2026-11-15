@@ -1,0 +1,58 @@
+{{- if .Values.apps.enabled }}
+{{- $full := include "craft-studio.fullname" . }}
+{{- $public := include "craft-studio.publicUrl" . }}
+{{- $origins := .Values.apps.embedOrigins | default (printf "%s,vscode-webview://*" $public) }}
+{{- range $app := .Values.apps.names }}
+{{- $sel := dict "root" $ "name" $app }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ $full }}-{{ $app }}
+  labels:
+    {{- include "craft-studio.labels" $ | nindent 4 }}
+    app.kubernetes.io/name: {{ $app }}
+    app.kubernetes.io/component: app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "craft-studio.selector" $sel | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "craft-studio.labels" $ | nindent 8 }}
+        app.kubernetes.io/name: {{ $app }}
+        app.kubernetes.io/component: app
+    spec:
+      automountServiceAccountToken: false
+      enableServiceLinks: false
+      containers:
+        - name: app
+          image: "{{ $.Values.apps.repository }}/{{ $app }}:{{ $.Values.apps.tag }}"
+          imagePullPolicy: {{ $.Values.apps.pullPolicy }}
+          ports:
+            - { name: http, containerPort: 8080 }
+          env:
+            - { name: EMBED_ORIGINS, value: {{ $origins | quote }} }
+          readinessProbe:
+            httpGet: { path: /healthz, port: http }
+          livenessProbe:
+            httpGet: { path: /healthz, port: http }
+            periodSeconds: 30
+          resources:
+            {{- toYaml $.Values.apps.resources | nindent 12 }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ $full }}-{{ $app }}
+  labels:
+    {{- include "craft-studio.labels" $ | nindent 4 }}
+spec:
+  selector:
+    {{- include "craft-studio.selector" $sel | nindent 4 }}
+  ports:
+    - { name: http, port: 8080, targetPort: http }
+{{- end }}
+{{- end }}

@@ -1,0 +1,95 @@
+# Craft Studio: VS Code in the browser (code-server) with Claude Code and the Craft Apps
+# extension, the craft-mcp relay, and the five craft app pages.
+#
+# The smallest install needs only the address:
+#   helm install studio oci://ghcr.io/hayone1/charts/craft-studio \
+#     --set host=studio.example.com --set ingress.enabled=true
+# (or from a clone: helm install studio charts/craft-studio --set host=...)
+
+# The address people open, without https://. The chart serves everything on it:
+# / is VS Code, /relay/ is the relay.
+host: ""
+# The full address, when it isn't https://<host> (for example http://localhost:8080 for a
+# port-forward test).
+publicUrl: ""
+
+auth:
+  # "password" (code-server's sign-in) or "none" (only behind another sign-in, such as
+  # oauth2-proxy in front of the ingress).
+  mode: password
+  # Empty: the chart makes a password once and keeps it across upgrades. Read it with:
+  #   kubectl get secret <release>-craft-studio -o jsonpath='{.data.password}' | base64 -d
+  password: ""
+  # A Secret of your own with the keys password, mcp-key and mint-token (all three).
+  existingSecret: ""
+
+studio:
+  image:
+    repository: hayone/craft-studio
+    tag: latest
+    pullPolicy: Always
+  resources:
+    requests: { cpu: 250m, memory: 1Gi }
+    limits: { cpu: "2", memory: 4Gi }
+  # /home/coder: projects, settings, extensions, the Claude Code sign-in.
+  persistence:
+    enabled: true
+    size: 10Gi
+    storageClass: ""
+    existingClaim: ""
+  # More Open VSX extensions, comma separated.
+  extensions: ""
+  # More environment variables for the studio container (see the image's README).
+  env: {}
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}
+
+# The craft-mcp relay. With relay.enabled=false the studio runs its own copy inside its pod.
+relay:
+  enabled: true
+  image:
+    repository: hayone/craft-mcp
+    tag: latest
+    pullPolicy: Always
+  resources:
+    requests: { cpu: 50m, memory: 128Mi }
+    limits: { memory: 1Gi }
+
+# The app pages, one Deployment each. With apps.enabled=false the studio serves its own copies.
+apps:
+  enabled: true
+  # hayone/<app>:<tag>
+  repository: hayone
+  tag: remote
+  pullPolicy: Always
+  names: [photocraft, vectorcraft, lightcraft, filmcraft, effectcraft]
+  # Editors that may frame the app pages. Empty: the public address and vscode-webview://*.
+  embedOrigins: ""
+  resources:
+    requests: { cpu: 10m, memory: 16Mi }
+    limits: { memory: 128Mi }
+
+ingress:
+  enabled: false
+  className: ""
+  # ingress-nginx closes idle WebSockets after 60 s; the relay and VS Code keep theirs open.
+  annotations:
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
+    nginx.ingress.kubernetes.io/proxy-body-size: 200m
+  # e.g. [{secretName: studio-tls, hosts: [studio.example.com]}]
+  tls: []
+
+# Gateway API, instead of an Ingress.
+httpRoute:
+  enabled: false
+  # e.g. [{name: gateway, namespace: gateway-system, sectionName: https}]
+  parentRefs: []
+  annotations: {}
+
+podSecurityContext:
+  runAsUser: 1000
+  runAsGroup: 1000
+  fsGroup: 1000
+  fsGroupChangePolicy: OnRootMismatch

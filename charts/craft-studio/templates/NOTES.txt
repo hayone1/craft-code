@@ -1,0 +1,14 @@
+Craft Studio: {{ include "craft-studio.publicUrl" . }}
+{{- if eq .Values.auth.mode "password" }}
+
+Password:
+  kubectl -n {{ .Release.Namespace }} get secret {{ include "craft-studio.secretName" . }} -o jsonpath='{.data.password}' | base64 -d; echo
+{{- end }}
+{{- if not (or .Values.ingress.enabled .Values.httpRoute.enabled) }}
+
+No Ingress or HTTPRoute is on. To try it with a port-forward, install with publicUrl=http://localhost:8080, then:
+  kubectl -n {{ .Release.Namespace }} port-forward svc/{{ include "craft-studio.fullname" . }} 8080:8080
+{{- end }}
+
+Open the Craft view in VS Code's activity bar and click an app. Sign in to Claude Code in its
+panel, then ask Claude to work in the app.
