@@ -43,7 +43,7 @@ pod=$(kubectl get pods -l com.coder.user.username=admin -o name | head -1)
 inside() { kubectl exec "$pod" -- sh -c "$1"; }
 inside 'curl -fsS http://t-craft-coder-photocraft.default.svc:8080/_embed/config.json' |
   grep -q '"http://localhost:8080"' || fail "apps from the workspace"
-inside 'curl -fsS "$CRAFT_RELAY_URL/healthz"' | grep -q ok || fail "relay from the workspace"
+inside 'curl -fsS http://t-craft-coder-relay.default.svc:8080/healthz' | grep -q ok || fail "relay from the workspace"
 echo "ok: the workspace reaches the apps and the relay"
 
 for _ in $(seq 1 90); do

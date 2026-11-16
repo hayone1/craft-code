@@ -64,7 +64,9 @@ ws=$(docker ps --filter label=coder.owner=admin --format '{{.Names}}' | head -1)
 inside() { docker exec "$ws" sh -c "$1"; }
 inside 'curl -fsS http://photocraft:8080/_embed/config.json' | grep -q '"https://localhost"' || fail "apps from the workspace"
 inside 'curl -fsS http://craft-mcp:8080/healthz' | grep -q ok || fail "relay from the workspace"
-inside 'printenv CRAFT_RELAY_TOKEN' | grep -q . || fail "relay token in the workspace"
+# The agent gives its env to the processes it starts (code-server), not to the container.
+inside 'for p in /proc/[0-9]*; do tr "\0" "\n" <$p/environ 2>/dev/null | grep -q "^CRAFT_RELAY_TOKEN=." && exit 0; done; exit 1' ||
+  fail "relay token in the workspace"
 echo "ok: the workspace reaches the apps and the relay"
 
 for _ in $(seq 1 90); do

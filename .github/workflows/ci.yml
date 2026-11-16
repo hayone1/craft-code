@@ -103,9 +103,11 @@ jobs:
           set -eu
           curl -fsSL https://releases.hashicorp.com/terraform/1.13.4/terraform_1.13.4_linux_amd64.zip -o /tmp/tf.zip
           sudo unzip -oq /tmp/tf.zip -d /usr/local/bin terraform
-          for t in charts/craft-coder/files/templates/*/; do
-            terraform fmt -check -diff "$t"
-            (cd "$t" && terraform init -backend=false -input=false >/dev/null && terraform validate)
+          # A copy, so terraform's files stay out of the chart.
+          for t in docker kubernetes; do
+            terraform fmt -check -diff "charts/craft-coder/files/templates/$t"
+            mkdir -p "/tmp/tf-$t" && cp "charts/craft-coder/files/templates/$t/main.tf" "/tmp/tf-$t/"
+            (cd "/tmp/tf-$t" && terraform init -backend=false -input=false >/dev/null && terraform validate)
           done
       - name: Start a kind cluster
         uses: helm/kind-action@v1
