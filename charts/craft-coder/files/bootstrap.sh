@@ -69,7 +69,7 @@ if coder templates versions list "$TEMPLATE_NAME" -o json >/tmp/versions.json 2>
 else
   new_template=true
 fi
-if [ "$new_template" = false ] && jq -e --arg h "$hash" 'any(.[]; .name == $h)' /tmp/versions.json >/dev/null; then
+if [ "$new_template" = false ] && jq -e --arg h "$hash" 'any(.[]; (.TemplateVersion.name // .name) == $h)' /tmp/versions.json >/dev/null; then
   say "template $TEMPLATE_NAME is current ($hash)"
 else
   say "pushing template $TEMPLATE_NAME ($hash)"
