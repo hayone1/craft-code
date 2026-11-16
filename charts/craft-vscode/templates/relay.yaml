@@ -1,0 +1,60 @@
+{{- if .Values.relay.enabled }}
+{{- $full := include "craft-vscode.fullname" . }}
+{{- $secret := include "craft-vscode.secretName" . }}
+{{- $sel := dict "root" . "name" "relay" }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ $full }}-relay
+  labels:
+    {{- include "craft-vscode.labels" . | nindent 4 }}
+    app.kubernetes.io/name: relay
+spec:
+  # One replica: a tab and its MCP client must meet in the same process.
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "craft-vscode.selector" $sel | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "craft-vscode.labels" . | nindent 8 }}
+        app.kubernetes.io/name: relay
+    spec:
+      automountServiceAccountToken: false
+      enableServiceLinks: false
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: relay
+          image: "{{ .Values.relay.image.repository }}:{{ .Values.relay.image.tag }}"
+          imagePullPolicy: {{ .Values.relay.image.pullPolicy }}
+          ports:
+            - { name: http, containerPort: 8080 }
+          env:
+            # The studio passes <public address>/relay/ on to this Service.
+            - { name: PUBLIC_HOST, value: "{{ include "craft-vscode.publicUrl" . }}/relay" }
+            - name: MCP_KEY
+              valueFrom: { secretKeyRef: { name: {{ $secret }}, key: mcp-key } }
+            - name: MINT_TOKENS
+              valueFrom: { secretKeyRef: { name: {{ $secret }}, key: mint-token } }
+          readinessProbe:
+            httpGet: { path: /healthz, port: http }
+          livenessProbe:
+            httpGet: { path: /healthz, port: http }
+            periodSeconds: 30
+          resources:
+            {{- toYaml .Values.relay.resources | nindent 12 }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ $full }}-relay
+  labels:
+    {{- include "craft-vscode.labels" . | nindent 4 }}
+spec:
+  selector:
+    {{- include "craft-vscode.selector" $sel | nindent 4 }}
+  ports:
+    - { name: http, port: 8080, targetPort: http }
+{{- end }}

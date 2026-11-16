@@ -1,11 +1,11 @@
 {{- if .Values.ingress.enabled }}
-{{- $full := include "craft-studio.fullname" . }}
+{{- $full := include "craft-vscode.fullname" . }}
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: {{ $full }}
   labels:
-    {{- include "craft-studio.labels" . | nindent 4 }}
+    {{- include "craft-vscode.labels" . | nindent 4 }}
   {{- with .Values.ingress.annotations }}
   annotations:
     {{- toYaml . | nindent 4 }}

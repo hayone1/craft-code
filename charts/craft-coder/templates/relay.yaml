@@ -1,24 +1,24 @@
 {{- if .Values.relay.enabled }}
-{{- $full := include "craft-studio.fullname" . }}
-{{- $secret := include "craft-studio.secretName" . }}
+{{- $full := include "craft-coder.fullname" . }}
+{{- $secret := include "craft-coder.secretName" . }}
 {{- $sel := dict "root" . "name" "relay" }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: {{ $full }}-relay
   labels:
-    {{- include "craft-studio.labels" . | nindent 4 }}
+    {{- include "craft-coder.labels" . | nindent 4 }}
     app.kubernetes.io/name: relay
 spec:
   # One replica: a tab and its MCP client must meet in the same process.
   replicas: 1
   selector:
     matchLabels:
-      {{- include "craft-studio.selector" $sel | nindent 6 }}
+      {{- include "craft-coder.selector" $sel | nindent 6 }}
   template:
     metadata:
       labels:
-        {{- include "craft-studio.labels" . | nindent 8 }}
+        {{- include "craft-coder.labels" . | nindent 8 }}
         app.kubernetes.io/name: relay
     spec:
       automountServiceAccountToken: false
@@ -32,8 +32,8 @@ spec:
           ports:
             - { name: http, containerPort: 8080 }
           env:
-            # The studio passes <public address>/relay/ on to this Service.
-            - { name: PUBLIC_HOST, value: "{{ include "craft-studio.publicUrl" . }}/relay" }
+            # The front passes <public address>/relay/ on to this Service.
+            - { name: PUBLIC_HOST, value: "{{ include "craft-coder.publicUrl" . }}/relay" }
             - name: MCP_KEY
               valueFrom: { secretKeyRef: { name: {{ $secret }}, key: mcp-key } }
             - name: MINT_TOKENS
@@ -51,10 +51,10 @@ kind: Service
 metadata:
   name: {{ $full }}-relay
   labels:
-    {{- include "craft-studio.labels" . | nindent 4 }}
+    {{- include "craft-coder.labels" . | nindent 4 }}
 spec:
   selector:
-    {{- include "craft-studio.selector" $sel | nindent 4 }}
+    {{- include "craft-coder.selector" $sel | nindent 4 }}
   ports:
     - { name: http, port: 8080, targetPort: http }
 {{- end }}

@@ -1,10 +1,10 @@
 #!/bin/bash
-# Runs docker-compose.yml with DOMAIN=localhost (Caddy then uses its own local certificate) and
+# Runs vscode/docker-compose.yml with DOMAIN=localhost (Caddy then uses its own local certificate) and
 # checks each part through https://localhost. Needs ports 80 and 443 free.
 set -eu # no pipefail: `curl | grep -q` would fail when grep stops reading early
-cd "$(dirname "$0")/.."
+cd "$(dirname "$0")/../vscode"
 export DOMAIN=localhost PASSWORD=compose-test-password
-dc() { docker compose -p craft-studio-test "$@"; }
+dc() { docker compose -p craft-vscode-test "$@"; }
 trap 'dc logs --tail 40; dc down -v >/dev/null 2>&1 || true' EXIT
 fail() { echo "FAIL: $*" >&2; exit 1; }
 

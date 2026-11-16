@@ -1,0 +1,136 @@
+# craft-coder: a Coder server where every user gets their own workspace with VS Code in the
+# browser, Claude Code, the Craft Apps extension and the five craft apps.
+#
+# The smallest install needs only the address:
+#   helm install craft oci://ghcr.io/hayone1/charts/craft-coder \
+#     --set host=coder.example.com --set ingress.enabled=true
+#
+# After the install, a job makes the server ready: it creates the admin account, pushes the
+# "craft" template, and starts a workspace for the admin.
+
+# The address people open, without https://. Everything is served on it: / is Coder and /relay/
+# is the craft-mcp relay.
+host: ""
+# The full address, when it isn't https://<host> (for example http://localhost:8080 for a
+# port-forward test).
+publicUrl: ""
+# Optional: a wildcard host such as "*.coder.example.com". With it, VS Code and other workspace
+# apps get their own subdomain, which keeps them apart from Coder's own pages. It needs a wildcard
+# DNS record and a wildcard certificate.
+wildcardHost: ""
+
+admin:
+  username: admin
+  email: admin@example.com
+  # Used on the first install only; later changes happen in Coder (Account > Security).
+  # Empty: the chart makes one. Read it with:
+  #   kubectl get secret <release>-craft-coder -o jsonpath='{.data.admin-password}' | base64 -d
+  password: ""
+  # The admin's workspace, made on the first install. Empty: none.
+  workspace: studio
+
+# A Secret of your own with the keys admin-password, mcp-key and mint-token (and pg-password
+# when postgres.enabled is true).
+existingSecret: ""
+
+coder:
+  image:
+    repository: ghcr.io/coder/coder
+    tag: latest
+    pullPolicy: IfNotPresent
+  # More Coder settings: https://coder.com/docs/reference/cli/server
+  # For example GitHub sign-in:
+  #   - { name: CODER_OAUTH2_GITHUB_CLIENT_ID, value: "..." }
+  #   - name: CODER_OAUTH2_GITHUB_CLIENT_SECRET
+  #     valueFrom: { secretKeyRef: { name: github-oauth, key: client-secret } }
+  #   - { name: CODER_OAUTH2_GITHUB_ALLOW_SIGNUPS, value: "true" }
+  #   - { name: CODER_OAUTH2_GITHUB_ALLOWED_ORGS, value: "your-org" }
+  # or OpenID Connect:
+  #   - { name: CODER_OIDC_ISSUER_URL, value: "https://accounts.google.com" }
+  #   - { name: CODER_OIDC_CLIENT_ID, value: "..." }
+  #   - name: CODER_OIDC_CLIENT_SECRET
+  #     valueFrom: { secretKeyRef: { name: oidc, key: client-secret } }
+  #   - { name: CODER_OIDC_EMAIL_DOMAIN, value: "example.com" }
+  env: []
+  resources:
+    requests: { cpu: 250m, memory: 512Mi }
+    limits: { memory: 2Gi }
+
+# The workspaces that the "craft" template makes.
+workspaces:
+  image: hayone/craft-code:workspace
+  # The StorageClass of each workspace's home volume. Empty: the cluster's default.
+  storageClass: ""
+
+# Coder's database. With enabled=false, put the address in externalUrl (or in the existing Secret's
+# key pg-url).
+postgres:
+  enabled: true
+  image: postgres:17-alpine
+  size: 5Gi
+  storageClass: ""
+  externalUrl: ""
+  resources:
+    requests: { cpu: 50m, memory: 128Mi }
+    limits: { memory: 1Gi }
+
+# The front: a small Caddy that passes /relay/ to the relay and everything else to Coder, so
+# the ingress needs only one rule.
+front:
+  image: caddy:2-alpine
+  resources:
+    requests: { cpu: 10m, memory: 32Mi }
+    limits: { memory: 256Mi }
+
+relay:
+  enabled: true
+  image:
+    repository: hayone/craft-mcp
+    tag: latest
+    pullPolicy: Always
+  resources:
+    requests: { cpu: 50m, memory: 128Mi }
+    limits: { memory: 1Gi }
+
+# The app pages, one Deployment each.
+apps:
+  enabled: true
+  # hayone/<app>:<tag>
+  repository: hayone
+  tag: remote
+  pullPolicy: Always
+  names: [photocraft, vectorcraft, lightcraft, filmcraft, effectcraft]
+  # Editors that may frame the app pages. Empty: the public address, the wildcard host and
+  # vscode-webview://*.
+  embedOrigins: ""
+  resources:
+    requests: { cpu: 10m, memory: 16Mi }
+    limits: { memory: 128Mi }
+
+# The job that makes the server ready after each install and upgrade.
+bootstrap:
+  image: alpine:3.22
+
+ingress:
+  enabled: false
+  className: ""
+  # ingress-nginx closes idle WebSockets after 60 s; Coder and the relay keep theirs open.
+  annotations:
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
+    nginx.ingress.kubernetes.io/proxy-body-size: 200m
+  # e.g. [{secretName: coder-tls, hosts: [coder.example.com, "*.coder.example.com"]}]
+  tls: []
+
+# Gateway API, instead of an Ingress.
+httpRoute:
+  enabled: false
+  # e.g. [{name: gateway, namespace: gateway-system, sectionName: https}]
+  parentRefs: []
+  annotations: {}
+
+podSecurityContext:
+  runAsUser: 1000
+  runAsGroup: 1000
+  fsGroup: 1000
+  fsGroupChangePolicy: OnRootMismatch

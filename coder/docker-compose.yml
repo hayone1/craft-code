@@ -1,0 +1,196 @@
+# craft-coder on one server: a Coder server where every user gets their own workspace with VS Code
+# in the browser, Claude Code and the craft apps. The "Deploy on Hostinger" button uses this file;
+# any server with Docker can too:
+#
+#   docker compose up -d
+#   docker compose logs setup        # the address and the admin password
+#
+# The first start makes everything ready: the admin account, the "craft" template, and a running
+# workspace for the admin. Needs ports 80 and 443. Every setting is optional (see .env.example):
+#   DOMAIN          the address, e.g. coder.example.com, with a DNS record pointing at this server.
+#                   Without it, the server's public IP address is used as <ip>.sslip.io, which
+#                   needs no DNS set-up.
+#   ADMIN_EMAIL     the admin's email address, for signing in. Default admin@example.com.
+#   ADMIN_PASSWORD  the admin's password. Without it, one is made and printed in the setup log.
+#   ACME_EMAIL      an email address for Let's Encrypt's certificate notices.
+#   CODER_*         any Coder server setting, for example GitHub or OIDC sign-in (see .env.example).
+#
+# Coder starts each workspace as a container next to these services, so the Coder server needs the
+# Docker socket. Anyone who is a Coder template admin can therefore control this server's Docker.
+name: craft-coder
+
+x-app: &app
+  restart: unless-stopped
+  depends_on:
+    setup: { condition: service_completed_successfully }
+  volumes: ["setup:/setup:ro"]
+  # The app pages answer the editor at this address only.
+  entrypoint: ["/bin/sh", "-c", '. /setup/public.env && export EMBED_ORIGINS="https://$$DOMAIN,vscode-webview://*" && exec /craft-start.sh']
+
+services:
+  # Runs once per start: works out the address, makes the secrets on the first start, and fetches
+  # the bootstrap script and the template. The secrets stay in the "setup" volume.
+  setup:
+    image: alpine:3.22
+    restart: "no"
+    environment:
+      DOMAIN: ${DOMAIN:-}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-}
+      ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@example.com}
+      # Where the bootstrap script and the template come from: a git ref of hayone1/craft-code.
+      CRAFT_CODE_REF: ${CRAFT_CODE_REF:-main}
+      # The workspace image. Empty: the template's default, hayone/craft-code:workspace.
+      WORKSPACE_IMAGE: ${WORKSPACE_IMAGE:-}
+    volumes: ["setup:/setup"]
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        set -eu
+        domain=$$(printf '%s' "$${DOMAIN:-}" | tr 'A-Z' 'a-z' | sed -e 's#^https\?://##' -e 's#/.*##')
+        if [ -z "$$domain" ]; then
+          ip=$$(wget -qO- -T 10 https://api.ipify.org || wget -qO- -T 10 https://ifconfig.me/ip)
+          echo "$$ip" | grep -Eq '^[0-9]+[.][0-9]+[.][0-9]+[.][0-9]+$$' || { echo "couldn't find this server's public IP address; set DOMAIN"; exit 1; }
+          domain="$$(echo "$$ip" | tr . -).sslip.io"
+        fi
+        printf 'DOMAIN=%s\n' "$$domain" > /setup/public.env
+        chmod 644 /setup/public.env
+        secret() { head -c 48 /dev/urandom | base64 | tr -dc 'A-Za-z0-9' | head -c 24; }
+        if [ ! -s /setup/private.env ]; then
+          printf 'MCP_KEY=%s\nMINT_TOKEN=%s\n' "$$(secret)" "$$(secret)" > /setup/private.env
+        fi
+        # craft-mcp runs as uid 1000.
+        chown 1000:1000 /setup/private.env && chmod 600 /setup/private.env
+        [ -s /setup/pg-password ] || secret > /setup/pg-password
+        [ -s /setup/admin-password ] || printf '%s' "$${ADMIN_PASSWORD:-$$(secret)}" > /setup/admin-password
+        chmod 600 /setup/pg-password /setup/admin-password
+        . /setup/private.env
+        printf 'coder_internal_url: http://coder:7080\ncraft_relay_token: %s\n' "$$MINT_TOKEN" > /setup/variables.yaml
+        [ -z "$${WORKSPACE_IMAGE:-}" ] || printf 'workspace_image: %s\n' "$$WORKSPACE_IMAGE" >> /setup/variables.yaml
+        chmod 600 /setup/variables.yaml
+        # The bootstrap script and the template. A test mounts a checkout at /source instead.
+        rm -rf /setup/source
+        if [ -d /source ]; then
+          cp -r /source/charts/craft-coder/files /setup/source
+        else
+          mkdir -p /setup/source/templates/docker
+          base="https://raw.githubusercontent.com/hayone1/craft-code/$$CRAFT_CODE_REF/charts/craft-coder/files"
+          wget -qO /setup/source/bootstrap.sh "$$base/bootstrap.sh"
+          wget -qO /setup/source/templates/docker/main.tf "$$base/templates/docker/main.tf"
+        fi
+        echo "craft-coder: https://$$domain"
+        echo "Sign in as $$ADMIN_EMAIL with the password: $$(cat /setup/admin-password)"
+        echo "(The password stays the same at the next start. Change it in Coder under Account > Security.)"
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    depends_on:
+      setup: { condition: service_completed_successfully }
+    ports: ["80:80", "443:443", "443:443/udp"]
+    environment:
+      ACME_EMAIL: ${ACME_EMAIL:-}
+    volumes: ["setup:/setup:ro", "caddy-data:/data", "caddy-config:/config"]
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        . /setup/public.env
+        {
+          [ -n "$${ACME_EMAIL:-}" ] && printf '{\n\temail %s\n}\n' "$$ACME_EMAIL"
+          printf '%s {\n\thandle_path /relay/* {\n\t\treverse_proxy craft-mcp:8080\n\t}\n\treverse_proxy coder:7080\n}\n' "$$DOMAIN"
+        } > /tmp/Caddyfile
+        exec caddy run --config /tmp/Caddyfile --adapter caddyfile
+
+  postgres:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    depends_on:
+      setup: { condition: service_completed_successfully }
+    environment:
+      POSTGRES_USER: coder
+      POSTGRES_DB: coder
+      POSTGRES_PASSWORD_FILE: /setup/pg-password
+    volumes: ["setup:/setup:ro", "postgres:/var/lib/postgresql/data"]
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "coder", "-d", "coder"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  coder:
+    image: ghcr.io/coder/coder:latest
+    restart: unless-stopped
+    # Root, to use the Docker socket on any server (the socket's group differs between servers).
+    user: "0:0"
+    depends_on:
+      setup: { condition: service_completed_successfully }
+      postgres: { condition: service_healthy }
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      CODER_HTTP_ADDRESS: 0.0.0.0:7080
+    volumes:
+      - setup:/setup:ro
+      - coder-home:/home/coder
+      - /var/run/docker.sock:/var/run/docker.sock
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        . /setup/public.env
+        export CODER_ACCESS_URL="https://$$DOMAIN"
+        export CODER_PG_CONNECTION_URL="postgres://coder:$$(cat /setup/pg-password)@postgres:5432/coder?sslmode=disable"
+        exec /opt/coder server
+
+  # Makes the server ready: the admin, the template and the admin's workspace (see bootstrap.sh).
+  bootstrap:
+    image: alpine:3.22
+    restart: "no"
+    depends_on:
+      setup: { condition: service_completed_successfully }
+      coder: { condition: service_started }
+    environment:
+      CODER_URL: http://coder:7080
+      ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@example.com}
+      TEMPLATE_DIR: /setup/source/templates/docker
+      VARIABLES_FILE: /setup/variables.yaml
+    volumes: ["setup:/setup:ro"]
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        set -eu
+        apk add --no-cache -q curl jq
+        ADMIN_PASSWORD=$$(cat /setup/admin-password) exec sh /setup/source/bootstrap.sh
+
+  # The relay: the app pages in the browser and the coding agents in the workspaces meet here.
+  craft-mcp:
+    image: hayone/craft-mcp:latest
+    restart: unless-stopped
+    depends_on:
+      setup: { condition: service_completed_successfully }
+    volumes: ["setup:/setup:ro"]
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        . /setup/public.env && . /setup/private.env
+        export MCP_KEY MINT_TOKENS="$$MINT_TOKEN" PUBLIC_HOST="https://$$DOMAIN/relay"
+        exec node relay.mjs
+
+  # The app pages. Only the workspaces reach them, through VS Code's port proxy, so Coder's sign-in
+  # covers them.
+  photocraft: { <<: *app, image: "hayone/photocraft:remote" }
+  vectorcraft: { <<: *app, image: "hayone/vectorcraft:remote" }
+  lightcraft: { <<: *app, image: "hayone/lightcraft:remote" }
+  filmcraft: { <<: *app, image: "hayone/filmcraft:remote" }
+  effectcraft: { <<: *app, image: "hayone/effectcraft:remote" }
+
+# Workspaces join this network by its name (the template's docker_network variable).
+networks:
+  default:
+    name: craft-coder
+
+volumes:
+  setup:
+  postgres:
+  coder-home:
+  caddy-data:
+  caddy-config:

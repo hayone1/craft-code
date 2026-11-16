@@ -1,0 +1,8 @@
+craft-coder is starting. A job makes it ready in a few minutes: the admin account, the "craft"
+template, and a workspace for the admin. Follow the job with:
+
+  kubectl -n {{ .Release.Namespace }} logs -f job/{{ include "craft-coder.fullname" . }}-bootstrap
+
+Open {{ include "craft-coder.publicUrl" . }} and sign in as {{ .Values.admin.email }}. The password:
+
+  kubectl -n {{ .Release.Namespace }} get secret {{ include "craft-coder.secretName" . }} -o jsonpath='{.data.admin-password}' | base64 -d

@@ -154,7 +154,7 @@ writeFileSync(join(OUT, "index.html"), `<!doctype html>
 ${APPS.map((a) => `<a class="app" href="${a}/">${title(a)}</a>`).join("\n")}
 <h2>Use them in VS Code</h2>
 <p>Install <a href="https://github.com/hayone1/craft-vscode">Craft Apps</a> and set <code>craft.appUrl</code> to this site's address.
-For a coding agent to drive the apps, the extension also needs a craft-mcp relay: see <a href="https://github.com/hayone1/craft-studio">craft-studio</a>.</p>
+For a coding agent to drive the apps, the extension also needs a craft-mcp relay: see <a href="https://github.com/hayone1/craft-code">craft-vscode</a>.</p>
 </body>
 </html>
 `);

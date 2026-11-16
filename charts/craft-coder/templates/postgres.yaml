@@ -1,0 +1,70 @@
+{{- if .Values.postgres.enabled }}
+{{- $full := include "craft-coder.fullname" . }}
+{{- $sel := dict "root" . "name" "postgres" }}
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ $full }}-postgres
+  labels:
+    {{- include "craft-coder.labels" . | nindent 4 }}
+    app.kubernetes.io/name: postgres
+spec:
+  serviceName: {{ $full }}-postgres
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "craft-coder.selector" $sel | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "craft-coder.labels" . | nindent 8 }}
+        app.kubernetes.io/name: postgres
+    spec:
+      automountServiceAccountToken: false
+      enableServiceLinks: false
+      containers:
+        - name: postgres
+          image: {{ .Values.postgres.image }}
+          ports:
+            - { name: postgres, containerPort: 5432 }
+          env:
+            - { name: POSTGRES_USER, value: coder }
+            - { name: POSTGRES_DB, value: coder }
+            - name: POSTGRES_PASSWORD
+              valueFrom: { secretKeyRef: { name: {{ include "craft-coder.secretName" . }}, key: pg-password } }
+            # A folder below the mount point: a new volume may hold lost+found.
+            - { name: PGDATA, value: /var/lib/postgresql/data/pgdata }
+          readinessProbe:
+            exec: { command: [pg_isready, -U, coder, -d, coder] }
+            periodSeconds: 5
+          livenessProbe:
+            exec: { command: [pg_isready, -U, coder, -d, coder] }
+            periodSeconds: 30
+          resources:
+            {{- toYaml .Values.postgres.resources | nindent 12 }}
+          volumeMounts:
+            - { name: data, mountPath: /var/lib/postgresql/data }
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes: [ReadWriteOnce]
+        {{- with .Values.postgres.storageClass }}
+        storageClassName: {{ . }}
+        {{- end }}
+        resources:
+          requests:
+            storage: {{ .Values.postgres.size }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ $full }}-postgres
+  labels:
+    {{- include "craft-coder.labels" . | nindent 4 }}
+spec:
+  selector:
+    {{- include "craft-coder.selector" $sel | nindent 4 }}
+  ports:
+    - { name: postgres, port: 5432, targetPort: postgres }
+{{- end }}

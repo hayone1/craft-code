@@ -1,13 +1,13 @@
 apiVersion: v2
-name: craft-studio
+name: craft-vscode
 description: VS Code in the browser with Claude Code and the storytold craft apps, ready to drive over MCP
 type: application
 version: 0.1.0
 appVersion: "latest"
-home: https://github.com/hayone1/craft-studio
+home: https://github.com/hayone1/craft-code
 sources:
-  - https://github.com/hayone1/craft-studio
-  - https://github.com/hayone1/Docker_Images/tree/main/craft-studio
+  - https://github.com/hayone1/craft-code
+  - https://github.com/hayone1/Docker_Images/tree/main/craft-vscode
   - https://github.com/hayone1/craft-vscode
 keywords: [code-server, vscode, claude-code, mcp, craft]
 maintainers:

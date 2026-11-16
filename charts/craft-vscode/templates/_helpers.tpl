@@ -1,4 +1,4 @@
-{{- define "craft-studio.fullname" -}}
+{{- define "craft-vscode.fullname" -}}
 {{- if contains .Chart.Name .Release.Name -}}
 {{- .Release.Name | trunc 50 | trimSuffix "-" -}}
 {{- else -}}
@@ -6,20 +6,20 @@
 {{- end -}}
 {{- end -}}
 
-{{- define "craft-studio.labels" -}}
+{{- define "craft-vscode.labels" -}}
 helm.sh/chart: {{ printf "%s-%s" .Chart.Name .Chart.Version }}
 app.kubernetes.io/instance: {{ .Release.Name }}
 app.kubernetes.io/managed-by: {{ .Release.Service }}
-app.kubernetes.io/part-of: craft-studio
+app.kubernetes.io/part-of: craft-vscode
 {{- end -}}
 
-{{- define "craft-studio.selector" -}}
+{{- define "craft-vscode.selector" -}}
 app.kubernetes.io/instance: {{ .root.Release.Name }}
 app.kubernetes.io/name: {{ .name }}
 {{- end -}}
 
 {{/* The address people open: publicUrl, else https://<host>. */}}
-{{- define "craft-studio.publicUrl" -}}
+{{- define "craft-vscode.publicUrl" -}}
 {{- if .Values.publicUrl -}}
 {{- .Values.publicUrl | trimSuffix "/" -}}
 {{- else if .Values.host -}}
@@ -29,6 +29,6 @@ app.kubernetes.io/name: {{ .name }}
 {{- end -}}
 {{- end -}}
 
-{{- define "craft-studio.secretName" -}}
-{{- .Values.auth.existingSecret | default (include "craft-studio.fullname" .) -}}
+{{- define "craft-vscode.secretName" -}}
+{{- .Values.auth.existingSecret | default (include "craft-vscode.fullname" .) -}}
 {{- end -}}

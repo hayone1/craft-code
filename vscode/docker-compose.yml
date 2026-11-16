@@ -1,4 +1,4 @@
-# Craft Studio on one server: VS Code in the browser with Claude Code and the craft apps, behind
+# Craft VS Code on one server: VS Code in the browser with Claude Code and the craft apps, behind
 # automatic HTTPS. The "Deploy on Hostinger" button uses this file; any server with Docker can too:
 #
 #   docker compose up -d
@@ -13,7 +13,7 @@
 #
 # The "setup" service runs once per start: it works out the address, and makes the relay's secrets
 # on the first start. The secrets stay in the "setup" volume.
-name: craft-studio
+name: craft-vscode
 
 x-app: &app
   restart: unless-stopped
@@ -48,7 +48,7 @@ services:
         fi
         # craft-mcp and the studio run as uid 1000.
         chown 1000:1000 /setup/private.env && chmod 600 /setup/private.env
-        echo "Craft Studio: https://$$domain"
+        echo "Craft VS Code: https://$$domain"
 
   caddy:
     image: caddy:2-alpine
@@ -72,7 +72,7 @@ services:
   # VS Code (code-server) with Claude Code and the Craft Apps extension. It also passes
   # https://<DOMAIN>/relay/ on to craft-mcp.
   studio:
-    image: hayone/craft-studio:latest
+    image: hayone/craft-code:latest
     restart: unless-stopped
     depends_on:
       setup: { condition: service_completed_successfully }
@@ -88,7 +88,7 @@ services:
         . /setup/public.env && . /setup/private.env
         export PUBLIC_URL="https://$$DOMAIN" CRAFT_RELAY_TOKEN="$$MINT_TOKEN"
         unset MCP_KEY MINT_TOKEN
-        exec /usr/bin/dumb-init /opt/craft-studio/entrypoint.sh
+        exec /usr/bin/dumb-init /opt/craft-code/entrypoint.sh
 
   # The relay: the app pages in the browser and the coding agent in VS Code meet here.
   craft-mcp:
