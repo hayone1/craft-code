@@ -82,7 +82,7 @@ fi
 
 if [ "$new_template" = true ] && [ -n "$WORKSPACE_NAME" ]; then
   say "creating the workspace $ADMIN_USERNAME/$WORKSPACE_NAME"
-  coder create "$ADMIN_USERNAME/$WORKSPACE_NAME" --template "$TEMPLATE_NAME" --yes ||
+  coder create "$ADMIN_USERNAME/$WORKSPACE_NAME" --template "$TEMPLATE_NAME" --use-parameter-defaults --yes ||
     say "couldn't create the workspace; create it in Coder's dashboard"
 fi
 say "done"
