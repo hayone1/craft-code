@@ -70,8 +70,9 @@ inside 'for p in /proc/[0-9]*; do tr "\0" "\n" <$p/environ 2>/dev/null | grep -q
 echo "ok: the workspace reaches the apps and the relay"
 
 for _ in $(seq 1 90); do
-  code=$(curl -ks -o /dev/null -w '%{http_code}' -H "Coder-Session-Token: $token" \
-    https://localhost/@admin/studio.main/apps/code-server/)
+  # Coder sets its app cookie through redirects, so follow them with a cookie jar.
+  code=$(curl -ksL -c /tmp/app-cookies -b /tmp/app-cookies -o /dev/null -w '%{http_code}' \
+    "https://localhost/@admin/studio.main/apps/code-server/?coder_session_token=$token")
   [ "$code" = 200 ] && break
   sleep 2
 done

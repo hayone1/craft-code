@@ -47,8 +47,9 @@ inside 'curl -fsS http://t-craft-coder-relay.default.svc:8080/healthz' | grep -q
 echo "ok: the workspace reaches the apps and the relay"
 
 for _ in $(seq 1 90); do
-  code=$(curl -s -o /dev/null -w '%{http_code}' -H "Coder-Session-Token: $token" \
-    http://localhost:8080/@admin/studio.main/apps/code-server/)
+  # Coder sets its app cookie through redirects, so follow them with a cookie jar.
+  code=$(curl -sL -c /tmp/app-cookies -b /tmp/app-cookies -o /dev/null -w '%{http_code}' \
+    "http://localhost:8080/@admin/studio.main/apps/code-server/?coder_session_token=$token")
   [ "$code" = 200 ] && break
   sleep 2
 done
