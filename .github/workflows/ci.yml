@@ -96,7 +96,7 @@ jobs:
           helm template t "$c" --set host=coder.example.com --set ingress.enabled=true             --set 'wildcardHost=*.coder.example.com' > /tmp/ingress.yaml
           helm template t "$c" --set host=coder.example.com --set httpRoute.enabled=true             --set 'httpRoute.parentRefs[0].name=gateway' > /tmp/route.yaml
           helm template t "$c" --set host=coder.example.com --set postgres.enabled=false             --set postgres.externalUrl=postgres://u:p@db/coder > /tmp/external.yaml
-          grep -q 'CODER_WILDCARD_ACCESS_URL, value: "*.coder.example.com"' /tmp/ingress.yaml
+          grep -qF 'CODER_WILDCARD_ACCESS_URL, value: "*.coder.example.com"' /tmp/ingress.yaml
           ! grep -q 'kind: StatefulSet' /tmp/external.yaml
       - name: Check the templates
         run: |
