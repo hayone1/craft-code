@@ -51,7 +51,7 @@ jobs:
             --set 'httpRoute.parentRefs[0].name=gateway' > /tmp/route.yaml
           helm template t "$c" --set publicUrl=http://localhost:8080 --set apps.enabled=false \
             --set relay.enabled=false > /tmp/one.yaml
-          grep -c '^kind: Deployment' /tmp/split.yaml | grep -qx 7
+          grep -c '^kind: Deployment' /tmp/split.yaml | grep -qx 10
           grep -c '^kind: Deployment' /tmp/one.yaml | grep -qx 1
           # apps.names picks the apps: their Deployments and the extension's list.
           helm template t "$c" --set publicUrl=http://localhost:8080 --set 'apps.names={photocraft,filmcraft}' > /tmp/two.yaml
