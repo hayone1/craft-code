@@ -84,10 +84,17 @@ resource "coder_agent" "main" {
   startup_script = <<-EOT
     set -e
     mkdir -p ${local.project_dir}
-    # Craft Apps from Open VSX, newest release at every start. The version must be named:
-    # --install-extension <id> --force keeps an installed copy, however old.
-    v=$(curl -fsS --max-time 20 https://open-vsx.org/api/hayone1/craft-vscode | jq -r '.version // empty' 2>/dev/null || true)
-    code-server --install-extension "hayone1.craft-vscode$${v:+@$v}" --force >/dev/null 2>&1 || true
+    # Craft Apps from Open VSX, newest release at every start. The workspace downloads the release's
+    # file: Open VSX's search, which --install-extension <id> uses, can lag a new release by hours.
+    meta=$(curl -fsS --max-time 20 https://open-vsx.org/api/hayone1/craft-vscode 2>/dev/null || true)
+    v=$(printf '%s' "$meta" | jq -r '.version // empty' 2>/dev/null || true)
+    have=$(code-server --list-extensions --show-versions 2>/dev/null | sed -n 's/^hayone1[.]craft-vscode@//Ip')
+    if [ -n "$v" ] && [ "$have" != "$v" ]; then
+      url=$(printf '%s' "$meta" | jq -r '.files.download // empty')
+      curl -fsSL --max-time 300 -o /tmp/craft-vscode.vsix "$url" &&
+        code-server --install-extension /tmp/craft-vscode.vsix --force >/dev/null 2>&1 || true
+      rm -f /tmp/craft-vscode.vsix
+    fi
     # The Claude Code command line, in the home volume. It updates itself.
     command -v claude >/dev/null || [ -x ~/.local/bin/claude ] || curl -fsSL https://claude.ai/install.sh | bash || true
   EOT
