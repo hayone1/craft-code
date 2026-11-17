@@ -6,7 +6,8 @@
 set -eu # no pipefail: `curl | grep -q` would fail when grep stops reading early
 root=$(cd "$(dirname "$0")/.." && pwd)
 cd "$root/coder"
-export DOMAIN=localhost ADMIN_EMAIL=admin@example.com ADMIN_PASSWORD=Compose-test-pass-1
+# EFFECTCRAFT=off: the test also checks that an app can be left out.
+export DOMAIN=localhost ADMIN_EMAIL=admin@example.com ADMIN_PASSWORD=Compose-test-pass-1 EFFECTCRAFT=off
 # Until a workspace tag exists on Docker Hub, a test can pass another image.
 export WORKSPACE_IMAGE=${WORKSPACE_IMAGE:-}
 override=$(mktemp --suffix .yml)
@@ -68,6 +69,11 @@ inside 'curl -fsS http://craft-mcp:8080/healthz' | grep -q ok || fail "relay fro
 inside 'for p in /proc/[0-9]*; do tr "\0" "\n" <$p/environ 2>/dev/null | grep -q "^CRAFT_RELAY_TOKEN=." && exit 0; done; exit 1' ||
   fail "relay token in the workspace"
 echo "ok: the workspace reaches the apps and the relay"
+
+[ -z "$(dc ps -aq effectcraft)" ] || fail "EFFECTCRAFT=off, but effectcraft runs"
+inside 'for p in /proc/[0-9]*; do tr "\0" "\n" <$p/environ 2>/dev/null | grep -qx "CRAFT_APPS=photocraft,vectorcraft,lightcraft,filmcraft" && exit 0; done; exit 1' ||
+  fail "the workspace's CRAFT_APPS"
+echo "ok: EFFECTCRAFT=off leaves EffectCraft out"
 
 for _ in $(seq 1 90); do
   # Coder sets its app cookie through redirects, so follow them with a cookie jar.

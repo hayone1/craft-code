@@ -13,6 +13,8 @@
 #   ADMIN_EMAIL     the admin's email address, for signing in. Default admin@example.com.
 #   ADMIN_PASSWORD  the admin's password. Without it, one is made and printed in the setup log.
 #   ACME_EMAIL      an email address for Let's Encrypt's certificate notices.
+#   PHOTOCRAFT      off leaves PhotoCraft out; the same for VECTORCRAFT, LIGHTCRAFT, FILMCRAFT
+#                   and EFFECTCRAFT. Every app runs by default.
 #   CODER_*         any Coder server setting, for example GitHub or OIDC sign-in (see .env.example).
 #
 # Coder starts each workspace as a container next to these services, so the Coder server needs the
@@ -35,6 +37,8 @@ services:
     restart: "no"
     environment:
       DOMAIN: ${DOMAIN:-}
+      # One word per app, <name>=<its switch>. An empty switch means the app runs.
+      CRAFT_APP_SWITCHES: "photocraft=${PHOTOCRAFT:-} vectorcraft=${VECTORCRAFT:-} lightcraft=${LIGHTCRAFT:-} filmcraft=${FILMCRAFT:-} effectcraft=${EFFECTCRAFT:-}"
       ADMIN_PASSWORD: ${ADMIN_PASSWORD:-}
       ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@example.com}
       # Where the bootstrap script and the template come from: a git ref of hayone1/craft-code.
@@ -52,6 +56,12 @@ services:
           echo "$$ip" | grep -Eq '^[0-9]+[.][0-9]+[.][0-9]+[.][0-9]+$$' || { echo "couldn't find this server's public IP address; set DOMAIN"; exit 1; }
           domain="$$(echo "$$ip" | tr . -).sslip.io"
         fi
+        # The apps that run (see the app services at the end of this file).
+        apps=""
+        for app in $$CRAFT_APP_SWITCHES; do
+          case $$app in *=) apps="$${apps:+$$apps,}$${app%=}" ;; esac
+        done
+        [ -n "$$apps" ] || { echo "every app is off; leave at least one on"; exit 1; }
         printf 'DOMAIN=%s\n' "$$domain" > /setup/public.env
         chmod 644 /setup/public.env
         secret() { head -c 48 /dev/urandom | base64 | tr -dc 'A-Za-z0-9' | head -c 24; }
@@ -64,7 +74,7 @@ services:
         [ -s /setup/admin-password ] || printf '%s' "$${ADMIN_PASSWORD:-$$(secret)}" > /setup/admin-password
         chmod 600 /setup/pg-password /setup/admin-password
         . /setup/private.env
-        printf 'coder_internal_url: http://coder:7080\ncraft_relay_token: %s\n' "$$MINT_TOKEN" > /setup/variables.yaml
+        printf 'coder_internal_url: http://coder:7080\ncraft_apps: "%s"\ncraft_relay_token: %s\n' "$$apps" "$$MINT_TOKEN" > /setup/variables.yaml
         [ -z "$${WORKSPACE_IMAGE:-}" ] || printf 'workspace_image: %s\n' "$$WORKSPACE_IMAGE" >> /setup/variables.yaml
         chmod 600 /setup/variables.yaml
         # The bootstrap script and the template. A test mounts a checkout at /source instead.
@@ -177,11 +187,11 @@ services:
 
   # The app pages. Only the workspaces reach them, through VS Code's port proxy, so Coder's sign-in
   # covers them.
-  photocraft: { <<: *app, image: "hayone/photocraft:remote" }
-  vectorcraft: { <<: *app, image: "hayone/vectorcraft:remote" }
-  lightcraft: { <<: *app, image: "hayone/lightcraft:remote" }
-  filmcraft: { <<: *app, image: "hayone/filmcraft:remote" }
-  effectcraft: { <<: *app, image: "hayone/effectcraft:remote" }
+  photocraft: { <<: *app, image: "hayone/photocraft:remote", profiles: ["${PHOTOCRAFT:-}"] }
+  vectorcraft: { <<: *app, image: "hayone/vectorcraft:remote", profiles: ["${VECTORCRAFT:-}"] }
+  lightcraft: { <<: *app, image: "hayone/lightcraft:remote", profiles: ["${LIGHTCRAFT:-}"] }
+  filmcraft: { <<: *app, image: "hayone/filmcraft:remote", profiles: ["${FILMCRAFT:-}"] }
+  effectcraft: { <<: *app, image: "hayone/effectcraft:remote", profiles: ["${EFFECTCRAFT:-}"] }
 
 # Workspaces join this network by its name (the template's docker_network variable).
 networks:

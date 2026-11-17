@@ -16,3 +16,8 @@
   for = "/*"
   [headers.values]
     X-Content-Type-Options = "nosniff"
+
+# Asked on the "Deploy to Netlify" page. Not in [build.environment]: a value there would win over
+# the answer. Empty: the five apps (static/build.mjs).
+[template.environment]
+  CRAFT_APPS = "The craft apps to deploy, comma separated, e.g. photocraft,filmcraft"

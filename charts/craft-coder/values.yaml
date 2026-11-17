@@ -99,6 +99,9 @@ apps:
   repository: hayone
   tag: remote
   pullPolicy: Always
+  # The apps to deploy, in the order the Craft Apps extension lists them. Leave out the ones you
+  # don't need, e.g. --set "apps.names={photocraft,filmcraft}". Each name needs an image
+  # <repository>/<name>:<tag>.
   names: [photocraft, vectorcraft, lightcraft, filmcraft, effectcraft]
   # Editors that may frame the app pages. Empty: the public address, the wildcard host and
   # vscode-webview://*.

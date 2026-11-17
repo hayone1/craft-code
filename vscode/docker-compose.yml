@@ -10,6 +10,8 @@
 #               no DNS set-up.
 #   PASSWORD    the sign-in password. Without it, one is made and printed in the studio's log.
 #   ACME_EMAIL  an email address for Let's Encrypt's certificate notices.
+#   PHOTOCRAFT  off leaves PhotoCraft out; the same for VECTORCRAFT, LIGHTCRAFT, FILMCRAFT
+#               and EFFECTCRAFT. Every app runs by default.
 #
 # The "setup" service runs once per start: it works out the address, and makes the relay's secrets
 # on the first start. The secrets stay in the "setup" volume.
@@ -29,6 +31,8 @@ services:
     restart: "no"
     environment:
       DOMAIN: ${DOMAIN:-}
+      # One word per app, <name>=<its switch>. An empty switch means the app runs.
+      CRAFT_APP_SWITCHES: "photocraft=${PHOTOCRAFT:-} vectorcraft=${VECTORCRAFT:-} lightcraft=${LIGHTCRAFT:-} filmcraft=${FILMCRAFT:-} effectcraft=${EFFECTCRAFT:-}"
     volumes: ["setup:/setup"]
     entrypoint: ["/bin/sh", "-c"]
     command:
@@ -40,7 +44,13 @@ services:
           echo "$$ip" | grep -Eq '^[0-9]+[.][0-9]+[.][0-9]+[.][0-9]+$$' || { echo "couldn't find this server's public IP address; set DOMAIN"; exit 1; }
           domain="$$(echo "$$ip" | tr . -).sslip.io"
         fi
-        printf 'DOMAIN=%s\n' "$$domain" > /setup/public.env
+        # The apps that run (see the app services at the end of this file).
+        apps=""
+        for app in $$CRAFT_APP_SWITCHES; do
+          case $$app in *=) apps="$${apps:+$$apps,}$${app%=}" ;; esac
+        done
+        [ -n "$$apps" ] || { echo "every app is off; leave at least one on"; exit 1; }
+        printf 'DOMAIN=%s\nCRAFT_APPS=%s\n' "$$domain" "$$apps" > /setup/public.env
         chmod 644 /setup/public.env
         if [ ! -s /setup/private.env ]; then
           secret() { head -c 48 /dev/urandom | base64 | tr -dc 'A-Za-z0-9' | head -c 32; }
@@ -86,7 +96,7 @@ services:
     command:
       - |
         . /setup/public.env && . /setup/private.env
-        export PUBLIC_URL="https://$$DOMAIN" CRAFT_RELAY_TOKEN="$$MINT_TOKEN"
+        export PUBLIC_URL="https://$$DOMAIN" CRAFT_APPS CRAFT_RELAY_TOKEN="$$MINT_TOKEN"
         unset MCP_KEY MINT_TOKEN
         exec /usr/bin/dumb-init /opt/craft-code/entrypoint.sh
 
@@ -105,11 +115,11 @@ services:
         exec node relay.mjs
 
   # The app pages. Only the studio reaches them; it shows them through its own port proxy.
-  photocraft: { <<: *app, image: "hayone/photocraft:remote" }
-  vectorcraft: { <<: *app, image: "hayone/vectorcraft:remote" }
-  lightcraft: { <<: *app, image: "hayone/lightcraft:remote" }
-  filmcraft: { <<: *app, image: "hayone/filmcraft:remote" }
-  effectcraft: { <<: *app, image: "hayone/effectcraft:remote" }
+  photocraft: { <<: *app, image: "hayone/photocraft:remote", profiles: ["${PHOTOCRAFT:-}"] }
+  vectorcraft: { <<: *app, image: "hayone/vectorcraft:remote", profiles: ["${VECTORCRAFT:-}"] }
+  lightcraft: { <<: *app, image: "hayone/lightcraft:remote", profiles: ["${LIGHTCRAFT:-}"] }
+  filmcraft: { <<: *app, image: "hayone/filmcraft:remote", profiles: ["${FILMCRAFT:-}"] }
+  effectcraft: { <<: *app, image: "hayone/effectcraft:remote", profiles: ["${EFFECTCRAFT:-}"] }
 
 volumes:
   setup:

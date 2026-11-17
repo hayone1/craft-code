@@ -37,7 +37,7 @@ that run a single container can run craft-vscode, so craft-vscode has the most d
 | Railway | [![Deploy on Railway](https://railway.com/button.svg)](https://railway.com/deploy/craft-vscode) | The whole studio in one container, with a volume and an HTTPS address. |
 | Render | [![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/hayone1/craft-code) | The whole studio in one container, with a disk and an HTTPS address. |
 | Hostinger | [![Deploy on Hostinger](https://assets.hostinger.com/vps/deploy.svg)](https://www.hostinger.com/docker-hosting?compose_url=https://raw.githubusercontent.com/hayone1/craft-code/main/vscode/docker-compose.yml) | A VPS that runs [vscode/docker-compose.yml](vscode/docker-compose.yml), with automatic HTTPS. |
-| Vercel | [![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fhayone1%2Fcraft-code&project-name=craft-apps) | The five app pages only (see [Vercel and Netlify](#vercel-and-netlify)). |
+| Vercel | [![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fhayone1%2Fcraft-code&project-name=craft-apps&env=CRAFT_APPS&envDescription=The%20craft%20apps%20to%20deploy%2C%20comma%20separated&envDefaults=%7B%22CRAFT_APPS%22%3A%22photocraft%2Cvectorcraft%2Clightcraft%2Cfilmcraft%2Ceffectcraft%22%7D) | The five app pages only (see [Vercel and Netlify](#vercel-and-netlify)). |
 | Netlify | [![Deploy to Netlify](https://www.netlify.com/img/deploy/button.svg)](https://app.netlify.com/start/deploy?repository=https://github.com/hayone1/craft-code) | The five app pages only (see [Vercel and Netlify](#vercel-and-netlify)). |
 
 ### After the deploy
@@ -237,6 +237,28 @@ accounts:
 With Docker Compose, put the settings in `.env` and run `docker compose up -d` again. With Helm,
 put the settings in `coder.env`.
 
+## Pick the apps
+
+Every deploy runs all five craft apps unless you choose fewer. An app that you leave out isn't
+downloaded or started, and the Craft Apps extension in VS Code doesn't list it. Fewer apps use
+less disk space and less memory on the server.
+
+| Deploy | How to pick the apps |
+| --- | --- |
+| Docker Compose and Hostinger | Set `PHOTOCRAFT=off` to leave PhotoCraft out. The same works with `VECTORCRAFT`, `LIGHTCRAFT`, `FILMCRAFT` and `EFFECTCRAFT`. On Hostinger, add the setting under **Environment variables** before you deploy. |
+| Helm (both charts) | Set `apps.names` to the apps you want, in the order the extension lists them, for example `--set "apps.names={photocraft,filmcraft}"`. |
+| Railway | Set the variable `CRAFT_APPS` to the apps you want, comma separated, for example `photocraft,filmcraft`. The container keeps all five app pages, but the extension lists only these apps. |
+| Vercel and Netlify | Change `CRAFT_APPS` on the deploy page, for example to `photocraft,filmcraft`. The site then has only these apps. |
+
+At least one app must stay on. With Docker Compose, the `setup` container stops with the message
+"every app is off" when you turn off all five apps.
+
+A change takes effect at the next start. With Docker Compose, run `docker compose up -d` again.
+Docker Compose doesn't stop an app that already runs when you turn the app off, so remove it
+with `docker compose rm -sf photocraft` (use the name of the app). With craft-coder, the next
+start also updates the template. Each workspace sees the new list after its owner presses
+**Update** in Coder.
+
 ## Vercel and Netlify
 
 Vercel and Netlify serve files and short functions. They can't run a container that stays on,
@@ -257,7 +279,7 @@ The static site is useful in two cases:
 
 The build (`node static/build.mjs`) downloads the app pages from the `hayone/<app>:remote` images
 on Docker Hub, so the build needs no Docker. Set `EMBED_ORIGINS` in the host's environment
-settings to choose which editors may frame the apps. The default is `vscode-webview://*`, which
+settings to choose which editors may frame the apps, and `CRAFT_APPS` to choose the apps. The default is `vscode-webview://*`, which
 is VS Code on the desktop.
 
 ## Limits

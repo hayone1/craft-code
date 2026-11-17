@@ -44,6 +44,12 @@ variable "craft_app_url" {
   description = "Where the craft apps are; {app} stands for the app's name, e.g. http://craft-{app}.craft.svc:8080/"
 }
 
+variable "craft_apps" {
+  type        = string
+  description = "The craft apps that run next to Coder, comma separated; the Craft Apps extension lists these"
+  default     = "photocraft,vectorcraft,lightcraft,filmcraft,effectcraft"
+}
+
 variable "craft_relay_url" {
   type        = string
   description = "The craft-mcp relay, as the workspace reaches it"
@@ -173,6 +179,7 @@ resource "coder_agent" "main" {
     GIT_COMMITTER_EMAIL = data.coder_workspace_owner.me.email
     # The Craft Apps extension: where the apps and the relay are.
     CRAFT_APP_URL     = var.craft_app_url
+    CRAFT_APPS        = var.craft_apps
     CRAFT_RELAY_URL   = var.craft_relay_url
     CRAFT_RELAY_TOKEN = var.craft_relay_token
   }

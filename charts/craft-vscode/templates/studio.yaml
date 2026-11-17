@@ -63,8 +63,9 @@ spec:
             {{- if .Values.apps.enabled }}
             # The extension puts each app's name in place of {app}.
             - { name: CRAFT_APP_URL, value: "http://{{ $full }}-{app}:8080/" }
-            - { name: CRAFT_APPS, value: {{ join "," .Values.apps.names | quote }} }
             {{- end }}
+            # The apps that the extension lists; with apps.enabled=false, the studio's own copies.
+            - { name: CRAFT_APPS, value: {{ join "," .Values.apps.names | quote }} }
             {{- if .Values.relay.enabled }}
             - { name: CRAFT_RELAY_URL, value: "http://{{ $full }}-relay:8080" }
             - { name: RELAY_UPSTREAM, value: "{{ $full }}-relay:8080" }

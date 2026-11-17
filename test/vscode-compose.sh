@@ -3,7 +3,8 @@
 # checks each part through https://localhost. Needs ports 80 and 443 free.
 set -eu # no pipefail: `curl | grep -q` would fail when grep stops reading early
 cd "$(dirname "$0")/../vscode"
-export DOMAIN=localhost PASSWORD=compose-test-password
+# EFFECTCRAFT=off: the test also checks that an app can be left out.
+export DOMAIN=localhost PASSWORD=compose-test-password EFFECTCRAFT=off
 dc() { docker compose -p craft-vscode-test "$@"; }
 trap 'dc logs --tail 40; dc down -v >/dev/null 2>&1 || true' EXIT
 fail() { echo "FAIL: $*" >&2; exit 1; }
@@ -31,9 +32,14 @@ session=$(dc exec -T studio curl -fsS -X POST -H "Authorization: Bearer $token" 
 echo "$session" | grep -q '"tab":"wss://localhost/relay/' || fail "minted connection: $session"
 echo "ok: the studio's relay token mints connections at https://localhost/relay"
 
-for app in photocraft vectorcraft lightcraft filmcraft effectcraft; do
+for app in photocraft vectorcraft lightcraft filmcraft; do
   dc exec -T studio curl -fsS "http://$app:8080/_embed/config.json" | grep -q '"https://localhost"' || fail "$app editor settings"
 done
-echo "ok: five apps answer the studio at https://localhost"
+echo "ok: four apps answer the studio at https://localhost"
+
+[ -z "$(dc ps -aq effectcraft)" ] || fail "EFFECTCRAFT=off, but effectcraft runs"
+dc exec -T studio sh -c 'tr "\0" "\n" </proc/1/environ' | grep -qx 'CRAFT_APPS=photocraft,vectorcraft,lightcraft,filmcraft' ||
+  fail "the studio's CRAFT_APPS"
+echo "ok: EFFECTCRAFT=off leaves EffectCraft out"
 
 echo PASS

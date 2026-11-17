@@ -52,6 +52,7 @@ spec:
                 printf 'workspace_image: %s\n' "{{ .Values.workspaces.image }}"
                 printf 'coder_internal_url: %s\n' "{{ include "craft-coder.internalUrl" . }}"
                 printf 'craft_app_url: "http://{{ $full }}-{app}.{{ $ns }}.svc:8080/"\n'
+                printf 'craft_apps: "%s"\n' "{{ join "," .Values.apps.names }}"
                 printf 'craft_relay_url: http://{{ $full }}-relay.{{ $ns }}.svc:8080\n'
                 printf 'craft_relay_token: %s\n' "$CRAFT_RELAY_TOKEN"
                 printf 'subdomain: %s\n' "{{ ternary "true" "false" (not (empty .Values.wildcardHost)) }}"
