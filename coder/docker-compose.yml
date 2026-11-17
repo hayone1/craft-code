@@ -13,8 +13,8 @@
 #   ADMIN_EMAIL     the admin's email address, for signing in. Default admin@example.com.
 #   ADMIN_PASSWORD  the admin's password. Without it, one is made and printed in the setup log.
 #   ACME_EMAIL      an email address for Let's Encrypt's certificate notices.
-#   PHOTOCRAFT      off leaves PhotoCraft out; the same for VECTORCRAFT, LIGHTCRAFT, FILMCRAFT
-#                   and EFFECTCRAFT. Every app runs by default.
+#   PHOTOCRAFT      off leaves PhotoCraft out; the same for VECTORCRAFT, LIGHTCRAFT, FILMCRAFT,
+#                   EFFECTCRAFT, WORDCRAFT, GRIDCRAFT and DECKCRAFT. Every app runs by default.
 #   CODER_*         any Coder server setting, for example GitHub or OIDC sign-in (see .env.example).
 #
 # Coder starts each workspace as a container next to these services, so the Coder server needs the
@@ -38,7 +38,7 @@ services:
     environment:
       DOMAIN: ${DOMAIN:-}
       # One word per app, <name>=<its switch>. An empty switch means the app runs.
-      CRAFT_APP_SWITCHES: "photocraft=${PHOTOCRAFT:-} vectorcraft=${VECTORCRAFT:-} lightcraft=${LIGHTCRAFT:-} filmcraft=${FILMCRAFT:-} effectcraft=${EFFECTCRAFT:-}"
+      CRAFT_APP_SWITCHES: "photocraft=${PHOTOCRAFT:-} vectorcraft=${VECTORCRAFT:-} lightcraft=${LIGHTCRAFT:-} filmcraft=${FILMCRAFT:-} effectcraft=${EFFECTCRAFT:-} wordcraft=${WORDCRAFT:-} gridcraft=${GRIDCRAFT:-} deckcraft=${DECKCRAFT:-}"
       ADMIN_PASSWORD: ${ADMIN_PASSWORD:-}
       ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@example.com}
       # Where the bootstrap script and the template come from: a git ref of hayone1/craft-code.
@@ -192,6 +192,9 @@ services:
   lightcraft: { <<: *app, image: "hayone/lightcraft:remote", profiles: ["${LIGHTCRAFT:-}"] }
   filmcraft: { <<: *app, image: "hayone/filmcraft:remote", profiles: ["${FILMCRAFT:-}"] }
   effectcraft: { <<: *app, image: "hayone/effectcraft:remote", profiles: ["${EFFECTCRAFT:-}"] }
+  wordcraft: { <<: *app, image: "hayone/wordcraft:remote", profiles: ["${WORDCRAFT:-}"] }
+  gridcraft: { <<: *app, image: "hayone/gridcraft:remote", profiles: ["${GRIDCRAFT:-}"] }
+  deckcraft: { <<: *app, image: "hayone/deckcraft:remote", profiles: ["${DECKCRAFT:-}"] }
 
 # Workspaces join this network by its name (the template's docker_network variable).
 networks:

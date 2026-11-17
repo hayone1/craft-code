@@ -1,5 +1,5 @@
 # craft-coder: a Coder server where every user gets their own workspace with VS Code in the
-# browser, Claude Code, the Craft Apps extension and the five craft apps.
+# browser, Claude Code, the Craft Apps extension and the craft apps.
 #
 # The smallest install needs only the address:
 #   helm install craft oci://ghcr.io/hayone1/charts/craft-coder \
@@ -102,7 +102,7 @@ apps:
   # The apps to deploy, in the order the Craft Apps extension lists them. Leave out the ones you
   # don't need, e.g. --set "apps.names={photocraft,filmcraft}". Each name needs an image
   # <repository>/<name>:<tag>.
-  names: [photocraft, vectorcraft, lightcraft, filmcraft, effectcraft]
+  names: [photocraft, vectorcraft, lightcraft, filmcraft, effectcraft, wordcraft, gridcraft, deckcraft]
   # Editors that may frame the app pages. Empty: the public address, the wildcard host and
   # vscode-webview://*.
   embedOrigins: ""

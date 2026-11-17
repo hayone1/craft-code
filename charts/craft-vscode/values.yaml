@@ -1,5 +1,5 @@
 # Craft VS Code: VS Code in the browser (code-server) with Claude Code and the Craft Apps
-# extension, the craft-mcp relay, and the five craft app pages.
+# extension, the craft-mcp relay, and the craft app pages.
 #
 # The smallest install needs only the address:
 #   helm install studio oci://ghcr.io/hayone1/charts/craft-vscode \
@@ -66,7 +66,7 @@ apps:
   # The apps to deploy, in the order the Craft Apps extension lists them. Leave out the ones you
   # don't need, e.g. --set "apps.names={photocraft,filmcraft}". Each name needs an image
   # <repository>/<name>:<tag>.
-  names: [photocraft, vectorcraft, lightcraft, filmcraft, effectcraft]
+  names: [photocraft, vectorcraft, lightcraft, filmcraft, effectcraft, wordcraft, gridcraft, deckcraft]
   # Editors that may frame the app pages. Empty: the public address and vscode-webview://*.
   embedOrigins: ""
   resources:

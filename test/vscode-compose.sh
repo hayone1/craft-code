@@ -32,13 +32,13 @@ session=$(dc exec -T studio curl -fsS -X POST -H "Authorization: Bearer $token" 
 echo "$session" | grep -q '"tab":"wss://localhost/relay/' || fail "minted connection: $session"
 echo "ok: the studio's relay token mints connections at https://localhost/relay"
 
-for app in photocraft vectorcraft lightcraft filmcraft; do
+for app in photocraft vectorcraft lightcraft filmcraft wordcraft gridcraft deckcraft; do
   dc exec -T studio curl -fsS "http://$app:8080/_embed/config.json" | grep -q '"https://localhost"' || fail "$app editor settings"
 done
-echo "ok: four apps answer the studio at https://localhost"
+echo "ok: seven apps answer the studio at https://localhost"
 
 [ -z "$(dc ps -aq effectcraft)" ] || fail "EFFECTCRAFT=off, but effectcraft runs"
-dc exec -T studio sh -c 'tr "\0" "\n" </proc/1/environ' | grep -qx 'CRAFT_APPS=photocraft,vectorcraft,lightcraft,filmcraft' ||
+dc exec -T studio sh -c 'tr "\0" "\n" </proc/1/environ' | grep -qx 'CRAFT_APPS=photocraft,vectorcraft,lightcraft,filmcraft,wordcraft,gridcraft,deckcraft' ||
   fail "the studio's CRAFT_APPS"
 echo "ok: EFFECTCRAFT=off leaves EffectCraft out"
 

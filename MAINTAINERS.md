@@ -13,7 +13,8 @@ the template must be created and published in Railway's dashboard.
 4. Name the service `craft-vscode`.
 5. Open the service's **Variables** and add `PASSWORD` with the value `${{secret(24)}}`. Railway
    then makes a new random password for each deploy.
-   Also add `CRAFT_APPS` with the value `photocraft,vectorcraft,lightcraft,filmcraft,effectcraft`.
+   Also add `CRAFT_APPS` with the value
+   `photocraft,vectorcraft,lightcraft,filmcraft,effectcraft,wordcraft,gridcraft,deckcraft`.
    People who deploy the template can then remove the apps that they don't want.
 6. Open the service's **Settings**:
    - Under **Networking**, turn on a public HTTP domain for port `8080`. The studio reads the

@@ -71,7 +71,7 @@ inside 'for p in /proc/[0-9]*; do tr "\0" "\n" <$p/environ 2>/dev/null | grep -q
 echo "ok: the workspace reaches the apps and the relay"
 
 [ -z "$(dc ps -aq effectcraft)" ] || fail "EFFECTCRAFT=off, but effectcraft runs"
-inside 'for p in /proc/[0-9]*; do tr "\0" "\n" <$p/environ 2>/dev/null | grep -qx "CRAFT_APPS=photocraft,vectorcraft,lightcraft,filmcraft" && exit 0; done; exit 1' ||
+inside 'for p in /proc/[0-9]*; do tr "\0" "\n" <$p/environ 2>/dev/null | grep -qx "CRAFT_APPS=photocraft,vectorcraft,lightcraft,filmcraft,wordcraft,gridcraft,deckcraft" && exit 0; done; exit 1' ||
   fail "the workspace's CRAFT_APPS"
 echo "ok: EFFECTCRAFT=off leaves EffectCraft out"
 

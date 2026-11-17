@@ -10,8 +10,8 @@
 #               no DNS set-up.
 #   PASSWORD    the sign-in password. Without it, one is made and printed in the studio's log.
 #   ACME_EMAIL  an email address for Let's Encrypt's certificate notices.
-#   PHOTOCRAFT  off leaves PhotoCraft out; the same for VECTORCRAFT, LIGHTCRAFT, FILMCRAFT
-#               and EFFECTCRAFT. Every app runs by default.
+#   PHOTOCRAFT  off leaves PhotoCraft out; the same for VECTORCRAFT, LIGHTCRAFT, FILMCRAFT,
+#               EFFECTCRAFT, WORDCRAFT, GRIDCRAFT and DECKCRAFT. Every app runs by default.
 #
 # The "setup" service runs once per start: it works out the address, and makes the relay's secrets
 # on the first start. The secrets stay in the "setup" volume.
@@ -32,7 +32,7 @@ services:
     environment:
       DOMAIN: ${DOMAIN:-}
       # One word per app, <name>=<its switch>. An empty switch means the app runs.
-      CRAFT_APP_SWITCHES: "photocraft=${PHOTOCRAFT:-} vectorcraft=${VECTORCRAFT:-} lightcraft=${LIGHTCRAFT:-} filmcraft=${FILMCRAFT:-} effectcraft=${EFFECTCRAFT:-}"
+      CRAFT_APP_SWITCHES: "photocraft=${PHOTOCRAFT:-} vectorcraft=${VECTORCRAFT:-} lightcraft=${LIGHTCRAFT:-} filmcraft=${FILMCRAFT:-} effectcraft=${EFFECTCRAFT:-} wordcraft=${WORDCRAFT:-} gridcraft=${GRIDCRAFT:-} deckcraft=${DECKCRAFT:-}"
     volumes: ["setup:/setup"]
     entrypoint: ["/bin/sh", "-c"]
     command:
@@ -120,6 +120,9 @@ services:
   lightcraft: { <<: *app, image: "hayone/lightcraft:remote", profiles: ["${LIGHTCRAFT:-}"] }
   filmcraft: { <<: *app, image: "hayone/filmcraft:remote", profiles: ["${FILMCRAFT:-}"] }
   effectcraft: { <<: *app, image: "hayone/effectcraft:remote", profiles: ["${EFFECTCRAFT:-}"] }
+  wordcraft: { <<: *app, image: "hayone/wordcraft:remote", profiles: ["${WORDCRAFT:-}"] }
+  gridcraft: { <<: *app, image: "hayone/gridcraft:remote", profiles: ["${GRIDCRAFT:-}"] }
+  deckcraft: { <<: *app, image: "hayone/deckcraft:remote", profiles: ["${DECKCRAFT:-}"] }
 
 volumes:
   setup:

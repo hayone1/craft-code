@@ -21,7 +21,7 @@ Both options run the same parts:
 | [Claude Code](https://www.anthropic.com/claude-code) | The coding agent. Each person signs in with their own Claude account. |
 | [Craft Apps](https://github.com/hayone1/craft-vscode) | The VS Code extension that opens the apps in panels and gives the coding agent one MCP server for all open apps. |
 | [craft-mcp](https://hub.docker.com/r/hayone/craft-mcp) | The relay. The app pages in the browser and the coding agent in VS Code meet at the relay. |
-| The app pages (`hayone/<app>:remote`) | The five craft apps as web pages. |
+| The app pages (`hayone/<app>:remote`) | The craft apps as web pages: PhotoCraft, VectorCraft, LightCraft, FilmCraft, EffectCraft, WordCraft, GridCraft and DeckCraft. |
 
 The image [`hayone/craft-code`](https://hub.docker.com/r/hayone/craft-code) has two tags. The tag
 `vscode` (also `latest`) is the whole craft-vscode studio in one container. The tag `workspace`
@@ -37,8 +37,8 @@ that run a single container can run craft-vscode, so craft-vscode has the most d
 | Railway | [![Deploy on Railway](https://railway.com/button.svg)](https://railway.com/deploy/craft-vscode) | The whole studio in one container, with a volume and an HTTPS address. |
 | Render | [![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/hayone1/craft-code) | The whole studio in one container, with a disk and an HTTPS address. |
 | Hostinger | [![Deploy on Hostinger](https://assets.hostinger.com/vps/deploy.svg)](https://www.hostinger.com/docker-hosting?compose_url=https://raw.githubusercontent.com/hayone1/craft-code/main/vscode/docker-compose.yml) | A VPS that runs [vscode/docker-compose.yml](vscode/docker-compose.yml), with automatic HTTPS. |
-| Vercel | [![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fhayone1%2Fcraft-code&project-name=craft-apps&env=CRAFT_APPS&envDescription=The%20craft%20apps%20to%20deploy%2C%20comma%20separated&envDefaults=%7B%22CRAFT_APPS%22%3A%22photocraft%2Cvectorcraft%2Clightcraft%2Cfilmcraft%2Ceffectcraft%22%7D) | The five app pages only (see [Vercel and Netlify](#vercel-and-netlify)). |
-| Netlify | [![Deploy to Netlify](https://www.netlify.com/img/deploy/button.svg)](https://app.netlify.com/start/deploy?repository=https://github.com/hayone1/craft-code) | The five app pages only (see [Vercel and Netlify](#vercel-and-netlify)). |
+| Vercel | [![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fhayone1%2Fcraft-code&project-name=craft-apps&env=CRAFT_APPS&envDescription=The%20craft%20apps%20to%20deploy%2C%20comma%20separated&envDefaults=%7B%22CRAFT_APPS%22%3A%22photocraft%2Cvectorcraft%2Clightcraft%2Cfilmcraft%2Ceffectcraft%2Cwordcraft%2Cgridcraft%2Cdeckcraft%22%7D) | The app pages only (see [Vercel and Netlify](#vercel-and-netlify)). |
+| Netlify | [![Deploy to Netlify](https://www.netlify.com/img/deploy/button.svg)](https://app.netlify.com/start/deploy?repository=https://github.com/hayone1/craft-code) | The app pages only (see [Vercel and Netlify](#vercel-and-netlify)). |
 
 ### After the deploy
 
@@ -87,7 +87,7 @@ Docker, ports 80 and 443 open, and at least 2 GB of memory.
 | `ACME_EMAIL` | An email address. Let's Encrypt writes to this address before a certificate runs out. |
 
 The Compose file runs each part in its own container: Caddy (HTTPS), the studio, the relay and
-the five apps. A small `setup` container runs first at every start. The `setup` container works
+the apps. A small `setup` container runs first at every start. The `setup` container works
 out the address and makes the relay's secrets on the first start. The secrets stay in the `setup`
 volume, and your projects stay in the `home` volume.
 
@@ -135,7 +135,7 @@ Open `http://localhost:8080`. The image's own settings are in the
 
 craft-coder runs a [Coder](https://coder.com) server. Coder gives each person an account and their
 own workspace. A workspace is a container with VS Code, Claude Code and the Craft Apps extension,
-and the person's own home folder. The relay and the five apps run once, next to Coder, and every
+and the person's own home folder. The relay and the apps run once, next to Coder, and every
 workspace uses them.
 
 The first start makes the server ready to use, so nobody has to set up Coder by hand:
@@ -191,7 +191,7 @@ only the admin can edit templates.
 ### Helm chart (Kubernetes)
 
 The chart in [charts/craft-coder](charts/craft-coder) runs Coder, its Postgres database, the
-relay, the five apps and a small Caddy front. The front sends `/relay/` to the relay and
+relay, the apps and a small Caddy front. The front sends `/relay/` to the relay and
 everything else to Coder. Workspaces run as pods in the same namespace.
 
 ```sh
@@ -239,19 +239,19 @@ put the settings in `coder.env`.
 
 ## Pick the apps
 
-Every deploy runs all five craft apps unless you choose fewer. An app that you leave out isn't
+Every deploy runs all eight craft apps unless you choose fewer. An app that you leave out isn't
 downloaded or started, and the Craft Apps extension in VS Code doesn't list it. Fewer apps use
 less disk space and less memory on the server.
 
 | Deploy | How to pick the apps |
 | --- | --- |
-| Docker Compose and Hostinger | Set `PHOTOCRAFT=off` to leave PhotoCraft out. The same works with `VECTORCRAFT`, `LIGHTCRAFT`, `FILMCRAFT` and `EFFECTCRAFT`. On Hostinger, add the setting under **Environment variables** before you deploy. |
+| Docker Compose and Hostinger | Set `PHOTOCRAFT=off` to leave PhotoCraft out. The same works with `VECTORCRAFT`, `LIGHTCRAFT`, `FILMCRAFT`, `EFFECTCRAFT`, `WORDCRAFT`, `GRIDCRAFT` and `DECKCRAFT`. On Hostinger, add the setting under **Environment variables** before you deploy. |
 | Helm (both charts) | Set `apps.names` to the apps you want, in the order the extension lists them, for example `--set "apps.names={photocraft,filmcraft}"`. |
-| Railway | Set the variable `CRAFT_APPS` to the apps you want, comma separated, for example `photocraft,filmcraft`. The container keeps all five app pages, but the extension lists only these apps. |
+| Railway | Set the variable `CRAFT_APPS` to the apps you want, comma separated, for example `photocraft,filmcraft`. The container keeps all eight app pages, but the extension lists only these apps. |
 | Vercel and Netlify | Change `CRAFT_APPS` on the deploy page, for example to `photocraft,filmcraft`. The site then has only these apps. |
 
 At least one app must stay on. With Docker Compose, the `setup` container stops with the message
-"every app is off" when you turn off all five apps.
+"every app is off" when you turn off every app.
 
 A change takes effect at the next start. With Docker Compose, run `docker compose up -d` again.
 Docker Compose doesn't stop an app that already runs when you turn the app off, so remove it
@@ -263,7 +263,7 @@ start also updates the template. Each workspace sees the new list after its owne
 
 Vercel and Netlify serve files and short functions. They can't run a container that stays on,
 and they can't hold the WebSocket connections that the relay needs. So these two buttons deploy
-only the five app pages, without VS Code and without the relay.
+only the app pages, without VS Code and without the relay.
 
 The static site is useful in two cases:
 

@@ -3,7 +3,7 @@
 //
 // The pages come out of the hayone/<app>:remote images on Docker Hub (the same pages the studio
 // uses), so the build needs no Docker. Each app lands in <out>/<app>/. Settings:
-//   CRAFT_APPS     the apps, comma separated (default: the five that craft-mcp drives)
+//   CRAFT_APPS     the apps, comma separated (default: every app that craft-mcp drives)
 //   IMAGE_TAG      the image tag (default remote)
 //   NAMESPACE      the Docker Hub namespace (default hayone)
 //   EMBED_ORIGINS  editors that may frame the apps and drive them, comma separated, e.g.
@@ -17,7 +17,7 @@ import zlib from "node:zlib";
 
 const env = process.env;
 const OUT = process.argv[2] ?? "public";
-const APPS = (env.CRAFT_APPS || "photocraft,vectorcraft,lightcraft,filmcraft,effectcraft").split(",").map((s) => s.trim()).filter(Boolean);
+const APPS = (env.CRAFT_APPS || "photocraft,vectorcraft,lightcraft,filmcraft,effectcraft,wordcraft,gridcraft,deckcraft").split(",").map((s) => s.trim()).filter(Boolean);
 const TAG = env.IMAGE_TAG || "remote";
 const NAMESPACE = env.NAMESPACE || "hayone";
 const ROOT = "usr/share/nginx/html/";

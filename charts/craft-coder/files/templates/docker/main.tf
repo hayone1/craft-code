@@ -44,7 +44,7 @@ variable "craft_app_url" {
 variable "craft_apps" {
   type        = string
   description = "The craft apps that run next to Coder, comma separated; the Craft Apps extension lists these"
-  default     = "photocraft,vectorcraft,lightcraft,filmcraft,effectcraft"
+  default     = "photocraft,vectorcraft,lightcraft,filmcraft,effectcraft,wordcraft,gridcraft,deckcraft"
 }
 
 variable "craft_relay_url" {
