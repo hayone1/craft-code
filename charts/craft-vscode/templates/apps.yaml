@@ -1,6 +1,6 @@
 {{- if .Values.apps.enabled }}
-{{- $full := include "craft-studio.fullname" . }}
-{{- $public := include "craft-studio.publicUrl" . }}
+{{- $full := include "craft-vscode.fullname" . }}
+{{- $public := include "craft-vscode.publicUrl" . }}
 {{- $origins := .Values.apps.embedOrigins | default (printf "%s,vscode-webview://*" $public) }}
 {{- range $app := .Values.apps.names }}
 {{- $sel := dict "root" $ "name" $app }}
@@ -10,18 +10,18 @@ kind: Deployment
 metadata:
   name: {{ $full }}-{{ $app }}
   labels:
-    {{- include "craft-studio.labels" $ | nindent 4 }}
+    {{- include "craft-vscode.labels" $ | nindent 4 }}
     app.kubernetes.io/name: {{ $app }}
     app.kubernetes.io/component: app
 spec:
   replicas: 1
   selector:
     matchLabels:
-      {{- include "craft-studio.selector" $sel | nindent 6 }}
+      {{- include "craft-vscode.selector" $sel | nindent 6 }}
   template:
     metadata:
       labels:
-        {{- include "craft-studio.labels" $ | nindent 8 }}
+        {{- include "craft-vscode.labels" $ | nindent 8 }}
         app.kubernetes.io/name: {{ $app }}
         app.kubernetes.io/component: app
     spec:
@@ -48,10 +48,10 @@ kind: Service
 metadata:
   name: {{ $full }}-{{ $app }}
   labels:
-    {{- include "craft-studio.labels" $ | nindent 4 }}
+    {{- include "craft-vscode.labels" $ | nindent 4 }}
 spec:
   selector:
-    {{- include "craft-studio.selector" $sel | nindent 4 }}
+    {{- include "craft-vscode.selector" $sel | nindent 4 }}
   ports:
     - { name: http, port: 8080, targetPort: http }
 {{- end }}

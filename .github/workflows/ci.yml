@@ -1,8 +1,9 @@
 name: ci
 
-# Checks every way to deploy: the static site (Vercel, Netlify), the Helm chart, and the Docker
-# Compose file run for real on the runner. A change to the chart's version on main publishes the
-# chart to oci://ghcr.io/hayone1/charts.
+# Checks every way to deploy both options: the static site (Vercel, Netlify), each Helm chart in a
+# kind cluster, and each Docker Compose file run for real on the runner. A new chart version on
+# main publishes that chart to oci://ghcr.io/hayone1/charts. The repository variable
+# WORKSPACE_IMAGE can point the craft-coder tests at another workspace image.
 
 on:
   push:
@@ -26,7 +27,7 @@ jobs:
         run: |
           set -eu
           test -s public/index.html
-          for app in photocraft vectorcraft lightcraft filmcraft effectcraft; do
+          for app in photocraft vectorcraft lightcraft filmcraft effectcraft wordcraft gridcraft deckcraft; do
             test -s "public/$app/index.html"
             grep -q '"vscode-webview://\*"' "public/$app/_embed/config.json"
           done
@@ -35,7 +36,7 @@ jobs:
           [ -z "$big" ] || { echo "::warning::files near Vercel's 100 MB limit: $big"; }
           du -sh public
 
-  helm:
+  helm-vscode:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
@@ -43,48 +44,101 @@ jobs:
       - name: Lint and render
         run: |
           set -eu
-          c=charts/craft-studio
+          c=charts/craft-vscode
           helm lint "$c" --set host=studio.example.com
           helm template t "$c" --set host=studio.example.com --set ingress.enabled=true > /tmp/split.yaml
           helm template t "$c" --set host=studio.example.com --set httpRoute.enabled=true \
             --set 'httpRoute.parentRefs[0].name=gateway' > /tmp/route.yaml
           helm template t "$c" --set publicUrl=http://localhost:8080 --set apps.enabled=false \
             --set relay.enabled=false > /tmp/one.yaml
-          grep -c '^kind: Deployment' /tmp/split.yaml | grep -qx 7
+          grep -c '^kind: Deployment' /tmp/split.yaml | grep -qx 10
           grep -c '^kind: Deployment' /tmp/one.yaml | grep -qx 1
+          # apps.names picks the apps: their Deployments and the extension's list.
+          helm template t "$c" --set publicUrl=http://localhost:8080 --set 'apps.names={photocraft,filmcraft}' > /tmp/two.yaml
+          grep -c 'image: "hayone/.*craft:remote"' /tmp/two.yaml | grep -qx 2
+          grep -qF '{ name: CRAFT_APPS, value: "photocraft,filmcraft" }' /tmp/two.yaml
+          grep -qF '{ name: CRAFT_APPS, value: "photocraft,vectorcraft,lightcraft,filmcraft,effectcraft,wordcraft,gridcraft,deckcraft" }' /tmp/one.yaml
       - name: Start a kind cluster
         uses: helm/kind-action@v1
       - name: Install into the cluster and wait for it
         run: |
           set -eu
-          helm install t charts/craft-studio --set publicUrl=http://localhost:8080 --wait --timeout 10m
+          helm install t charts/craft-vscode --set publicUrl=http://localhost:8080 --wait --timeout 10m
           kubectl get pods
-          kubectl port-forward svc/t-craft-studio 8080:8080 >/dev/null 2>&1 &
+          kubectl port-forward svc/t-craft-vscode 8080:8080 >/dev/null 2>&1 &
           for _ in $(seq 1 90); do
             [ "$(curl -s -o /dev/null -w '%{http_code}' http://localhost:8080/login)" = 200 ] && break
             sleep 2
           done
           curl -fsS http://localhost:8080/login >/dev/null
           curl -fsS http://localhost:8080/relay/healthz | grep -q ok
-          pw=$(kubectl get secret t-craft-studio -o jsonpath='{.data.password}' | base64 -d)
+          pw=$(kubectl get secret t-craft-vscode -o jsonpath='{.data.password}' | base64 -d)
           curl -s -c /tmp/c -o /dev/null --data-urlencode "password=$pw" http://localhost:8080/login
           grep -q code-server-session /tmp/c
-          kubectl exec deploy/t-craft-studio -- curl -fsS http://t-craft-studio-photocraft:8080/_embed/config.json \
+          kubectl exec deploy/t-craft-vscode -- curl -fsS http://t-craft-vscode-photocraft:8080/_embed/config.json \
             | grep -q '"http://localhost:8080"'
           echo PASS
 
-  compose:
+  compose-vscode:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
       - name: Validate
-        run: docker compose config --quiet
+        run: docker compose -f vscode/docker-compose.yml config --quiet
       - name: Run it and check every part
-        run: bash test/compose.sh
+        run: bash test/vscode-compose.sh
+
+  helm-coder:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: azure/setup-helm@v4
+      - name: Lint and render
+        run: |
+          set -eu
+          c=charts/craft-coder
+          helm lint "$c" --set host=coder.example.com
+          helm template t "$c" --set host=coder.example.com --set ingress.enabled=true             --set 'wildcardHost=*.coder.example.com' > /tmp/ingress.yaml
+          helm template t "$c" --set host=coder.example.com --set httpRoute.enabled=true             --set 'httpRoute.parentRefs[0].name=gateway' > /tmp/route.yaml
+          helm template t "$c" --set host=coder.example.com --set postgres.enabled=false             --set postgres.externalUrl=postgres://u:p@db/coder > /tmp/external.yaml
+          grep -qF 'CODER_WILDCARD_ACCESS_URL, value: "*.coder.example.com"' /tmp/ingress.yaml
+          ! grep -q 'kind: StatefulSet' /tmp/external.yaml
+          # apps.names picks the apps: their Deployments and the template's list.
+          helm template t "$c" --set host=coder.example.com --set 'apps.names={photocraft,filmcraft}' > /tmp/two.yaml
+          grep -c 'image: "hayone/.*craft:remote"' /tmp/two.yaml | grep -qx 2
+          grep -qF "craft_apps: \"%s\"\n' \"photocraft,filmcraft\"" /tmp/two.yaml
+      - name: Check the templates
+        run: |
+          set -eu
+          curl -fsSL https://releases.hashicorp.com/terraform/1.13.4/terraform_1.13.4_linux_amd64.zip -o /tmp/tf.zip
+          sudo unzip -oq /tmp/tf.zip -d /usr/local/bin terraform
+          # A copy, so terraform's files stay out of the chart.
+          for t in docker kubernetes; do
+            terraform fmt -check -diff "charts/craft-coder/files/templates/$t"
+            mkdir -p "/tmp/tf-$t" && cp "charts/craft-coder/files/templates/$t/main.tf" "/tmp/tf-$t/"
+            (cd "/tmp/tf-$t" && terraform init -backend=false -input=false >/dev/null && terraform validate)
+          done
+      - name: Start a kind cluster
+        uses: helm/kind-action@v1
+      - name: Install into the cluster and check every part
+        run: bash test/coder-helm.sh ${WORKSPACE_IMAGE:+--set workspaces.image=$WORKSPACE_IMAGE}
+        env:
+          WORKSPACE_IMAGE: ${{ vars.WORKSPACE_IMAGE }}
+
+  compose-coder:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - name: Validate
+        run: docker compose -f coder/docker-compose.yml config --quiet
+      - name: Run it and check every part
+        run: bash test/coder-compose.sh
+        env:
+          WORKSPACE_IMAGE: ${{ vars.WORKSPACE_IMAGE }}
 
   publish-chart:
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    needs: [helm]
+    needs: [helm-vscode, helm-coder]
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -92,16 +146,16 @@ jobs:
     steps:
       - uses: actions/checkout@v5
       - uses: azure/setup-helm@v4
-      - name: Push the chart when its version is new
-        env:
-          GH_TOKEN: ${{ github.token }}
+      - name: Push each chart when its version is new
         run: |
           set -eu
-          version=$(sed -n 's/^version: *//p' charts/craft-studio/Chart.yaml)
           echo "${{ github.token }}" | helm registry login ghcr.io -u "${{ github.actor }}" --password-stdin
-          if helm show chart "oci://ghcr.io/hayone1/charts/craft-studio" --version "$version" >/dev/null 2>&1; then
-            echo "craft-studio $version is already published"
-            exit 0
-          fi
-          helm package charts/craft-studio -d /tmp/chart
-          helm push "/tmp/chart/craft-studio-$version.tgz" oci://ghcr.io/hayone1/charts
+          for chart in craft-vscode craft-coder; do
+            version=$(sed -n 's/^version: *//p' "charts/$chart/Chart.yaml")
+            if helm show chart "oci://ghcr.io/hayone1/charts/$chart" --version "$version" >/dev/null 2>&1; then
+              echo "$chart $version is already published"
+              continue
+            fi
+            helm package "charts/$chart" -d /tmp/chart
+            helm push "/tmp/chart/$chart-$version.tgz" oci://ghcr.io/hayone1/charts
+          done

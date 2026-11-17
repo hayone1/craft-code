@@ -1,0 +1,81 @@
+{{- $full := include "craft-coder.fullname" . }}
+{{- $sel := dict "root" . "name" "front" }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ $full }}-front
+  labels:
+    {{- include "craft-coder.labels" . | nindent 4 }}
+data:
+  Caddyfile: |
+    {
+      admin off
+      servers {
+        # Keep the client address and scheme that the ingress or gateway passes on.
+        trusted_proxies static private_ranges
+      }
+    }
+    :8080 {
+      {{- if .Values.relay.enabled }}
+      handle_path /relay/* {
+        reverse_proxy {{ $full }}-relay:8080
+      }
+      {{- end }}
+      reverse_proxy {{ $full }}:80
+    }
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ $full }}-front
+  labels:
+    {{- include "craft-coder.labels" . | nindent 4 }}
+    app.kubernetes.io/name: front
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "craft-coder.selector" $sel | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "craft-coder.labels" . | nindent 8 }}
+        app.kubernetes.io/name: front
+    spec:
+      automountServiceAccountToken: false
+      enableServiceLinks: false
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: caddy
+          image: {{ .Values.front.image }}
+          args: [caddy, run, --config, /etc/caddy/Caddyfile, --adapter, caddyfile]
+          env:
+            - { name: XDG_DATA_HOME, value: /tmp/data }
+            - { name: XDG_CONFIG_HOME, value: /tmp/config }
+          ports:
+            - { name: http, containerPort: 8080 }
+          readinessProbe:
+            tcpSocket: { port: http }
+          resources:
+            {{- toYaml .Values.front.resources | nindent 12 }}
+          volumeMounts:
+            - { name: config, mountPath: /etc/caddy }
+            - { name: tmp, mountPath: /tmp }
+      volumes:
+        - name: config
+          configMap: { name: {{ $full }}-front }
+        - name: tmp
+          emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ $full }}-front
+  labels:
+    {{- include "craft-coder.labels" . | nindent 4 }}
+spec:
+  selector:
+    {{- include "craft-coder.selector" $sel | nindent 4 }}
+  ports:
+    - { name: http, port: 8080, targetPort: http }

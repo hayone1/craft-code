@@ -1,11 +1,11 @@
 # Render Blueprint: the "Deploy to Render" button reads this file. One web service from the
-# hayone/craft-studio image, with a disk for /home/coder. Disks need a paid instance type.
+# hayone/craft-code image, with a disk for /home/coder. Disks need a paid instance type.
 services:
   - type: web
-    name: craft-studio
+    name: craft-vscode
     runtime: image
     image:
-      url: docker.io/hayone/craft-studio:latest
+      url: docker.io/hayone/craft-code:latest
     plan: standard
     healthCheckPath: /healthz
     disk:

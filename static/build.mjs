@@ -3,7 +3,7 @@
 //
 // The pages come out of the hayone/<app>:remote images on Docker Hub (the same pages the studio
 // uses), so the build needs no Docker. Each app lands in <out>/<app>/. Settings:
-//   CRAFT_APPS     the apps, comma separated (default: the five that craft-mcp drives)
+//   CRAFT_APPS     the apps, comma separated (default: every app that craft-mcp drives)
 //   IMAGE_TAG      the image tag (default remote)
 //   NAMESPACE      the Docker Hub namespace (default hayone)
 //   EMBED_ORIGINS  editors that may frame the apps and drive them, comma separated, e.g.
@@ -17,7 +17,7 @@ import zlib from "node:zlib";
 
 const env = process.env;
 const OUT = process.argv[2] ?? "public";
-const APPS = (env.CRAFT_APPS || "photocraft,vectorcraft,lightcraft,filmcraft,effectcraft").split(",").map((s) => s.trim()).filter(Boolean);
+const APPS = (env.CRAFT_APPS || "photocraft,vectorcraft,lightcraft,filmcraft,effectcraft,wordcraft,gridcraft,deckcraft").split(",").map((s) => s.trim()).filter(Boolean);
 const TAG = env.IMAGE_TAG || "remote";
 const NAMESPACE = env.NAMESPACE || "hayone";
 const ROOT = "usr/share/nginx/html/";
@@ -154,7 +154,7 @@ writeFileSync(join(OUT, "index.html"), `<!doctype html>
 ${APPS.map((a) => `<a class="app" href="${a}/">${title(a)}</a>`).join("\n")}
 <h2>Use them in VS Code</h2>
 <p>Install <a href="https://github.com/hayone1/craft-vscode">Craft Apps</a> and set <code>craft.appUrl</code> to this site's address.
-For a coding agent to drive the apps, the extension also needs a craft-mcp relay: see <a href="https://github.com/hayone1/craft-studio">craft-studio</a>.</p>
+For a coding agent to drive the apps, the extension also needs a craft-mcp relay: see <a href="https://github.com/hayone1/craft-code">craft-vscode</a>.</p>
 </body>
 </html>
 `);

@@ -1,0 +1,119 @@
+{{- $full := include "craft-coder.fullname" . }}
+{{- $secret := include "craft-coder.secretName" . }}
+{{- $sel := dict "root" . "name" "coder" }}
+# Coder makes each workspace as a Deployment and a PVC in this namespace.
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: {{ $full }}
+  labels:
+    {{- include "craft-coder.labels" . | nindent 4 }}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: {{ $full }}-workspaces
+  labels:
+    {{- include "craft-coder.labels" . | nindent 4 }}
+rules:
+  - apiGroups: [""]
+    resources: [pods, persistentvolumeclaims, secrets, services]
+    verbs: [create, delete, deletecollection, get, list, patch, update, watch]
+  - apiGroups: [""]
+    resources: [events]
+    verbs: [get, list, watch]
+  - apiGroups: [apps]
+    resources: [deployments]
+    verbs: [create, delete, deletecollection, get, list, patch, update, watch]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: {{ $full }}-workspaces
+  labels:
+    {{- include "craft-coder.labels" . | nindent 4 }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: {{ $full }}-workspaces
+subjects:
+  - kind: ServiceAccount
+    name: {{ $full }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ $full }}
+  labels:
+    {{- include "craft-coder.labels" . | nindent 4 }}
+    app.kubernetes.io/name: coder
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "craft-coder.selector" $sel | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "craft-coder.labels" . | nindent 8 }}
+        app.kubernetes.io/name: coder
+    spec:
+      serviceAccountName: {{ $full }}
+      enableServiceLinks: false
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: coder
+          image: "{{ .Values.coder.image.repository }}:{{ .Values.coder.image.tag }}"
+          imagePullPolicy: {{ .Values.coder.image.pullPolicy }}
+          ports:
+            - { name: http, containerPort: 8080 }
+          env:
+            - { name: CODER_HTTP_ADDRESS, value: "0.0.0.0:8080" }
+            - { name: CODER_ACCESS_URL, value: {{ include "craft-coder.publicUrl" . | quote }} }
+            {{- with .Values.wildcardHost }}
+            - { name: CODER_WILDCARD_ACCESS_URL, value: {{ . | quote }} }
+            {{- end }}
+            {{- if .Values.postgres.enabled }}
+            - name: PG_PASSWORD
+              valueFrom: { secretKeyRef: { name: {{ $secret }}, key: pg-password } }
+            - { name: CODER_PG_CONNECTION_URL, value: "postgres://coder:$(PG_PASSWORD)@{{ $full }}-postgres:5432/coder?sslmode=disable" }
+            {{- else }}
+            - name: CODER_PG_CONNECTION_URL
+              valueFrom: { secretKeyRef: { name: {{ $secret }}, key: pg-url } }
+            {{- end }}
+            # The front (Caddy) sits in front of Coder; trust its X-Forwarded-For.
+            - { name: CODER_PROXY_TRUSTED_HEADERS, value: X-Forwarded-For }
+            - { name: CODER_PROXY_TRUSTED_ORIGINS, value: "10.0.0.0/8,172.16.0.0/12,192.168.0.0/16" }
+            # The coder Helm chart sets these too: workspaces in this namespace.
+            - { name: KUBE_POD_IP, valueFrom: { fieldRef: { fieldPath: status.podIP } } }
+            - { name: CODER_DERP_SERVER_RELAY_URL, value: "http://$(KUBE_POD_IP):8080" }
+            {{- with .Values.coder.env }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+          readinessProbe:
+            httpGet: { path: /healthz, port: http }
+          livenessProbe:
+            httpGet: { path: /healthz, port: http }
+            periodSeconds: 30
+            initialDelaySeconds: 60
+          resources:
+            {{- toYaml .Values.coder.resources | nindent 12 }}
+          volumeMounts:
+            # Terraform's providers and caches.
+            - { name: cache, mountPath: /home/coder }
+      volumes:
+        - name: cache
+          emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ $full }}
+  labels:
+    {{- include "craft-coder.labels" . | nindent 4 }}
+spec:
+  selector:
+    {{- include "craft-coder.selector" $sel | nindent 4 }}
+  ports:
+    - { name: http, port: 80, targetPort: http }

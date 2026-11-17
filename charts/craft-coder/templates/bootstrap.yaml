@@ -1,0 +1,77 @@
+{{- $full := include "craft-coder.fullname" . }}
+{{- $secret := include "craft-coder.secretName" . }}
+{{- $ns := .Release.Namespace }}
+# The bootstrap script and the Kubernetes template, from the chart's files/ folder.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ $full }}-bootstrap
+  labels:
+    {{- include "craft-coder.labels" . | nindent 4 }}
+data:
+  bootstrap.sh: |
+    {{- .Files.Get "files/bootstrap.sh" | nindent 4 }}
+  main.tf: |
+    {{- .Files.Get "files/templates/kubernetes/main.tf" | nindent 4 }}
+---
+# Makes the server ready after each install and upgrade: the admin, the "craft" template and the
+# admin's workspace. Each step is skipped when it is already done.
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ $full }}-bootstrap
+  labels:
+    {{- include "craft-coder.labels" . | nindent 4 }}
+  annotations:
+    helm.sh/hook: post-install,post-upgrade
+    helm.sh/hook-delete-policy: before-hook-creation
+spec:
+  backoffLimit: 3
+  activeDeadlineSeconds: 1800
+  ttlSecondsAfterFinished: 86400
+  template:
+    metadata:
+      labels:
+        {{- include "craft-coder.labels" . | nindent 8 }}
+        app.kubernetes.io/name: bootstrap
+    spec:
+      restartPolicy: Never
+      automountServiceAccountToken: false
+      enableServiceLinks: false
+      containers:
+        - name: bootstrap
+          image: {{ .Values.bootstrap.image }}
+          command: [/bin/sh, -c]
+          args:
+            - |
+              set -eu
+              apk add --no-cache -q curl jq
+              {
+                printf 'namespace: %s\n' "{{ $ns }}"
+                printf 'storage_class: "%s"\n' "{{ .Values.workspaces.storageClass }}"
+                printf 'workspace_image: %s\n' "{{ .Values.workspaces.image }}"
+                printf 'coder_internal_url: %s\n' "{{ include "craft-coder.internalUrl" . }}"
+                printf 'craft_app_url: "http://{{ $full }}-{app}.{{ $ns }}.svc:8080/"\n'
+                printf 'craft_apps: "%s"\n' "{{ join "," .Values.apps.names }}"
+                printf 'craft_relay_url: http://{{ $full }}-relay.{{ $ns }}.svc:8080\n'
+                printf 'craft_relay_token: %s\n' "$CRAFT_RELAY_TOKEN"
+                printf 'subdomain: %s\n' "{{ ternary "true" "false" (not (empty .Values.wildcardHost)) }}"
+              } > /tmp/variables.yaml
+              mkdir -p /tmp/craft && cp /bootstrap/main.tf /tmp/craft/
+              exec sh /bootstrap/bootstrap.sh
+          env:
+            - { name: CODER_URL, value: {{ include "craft-coder.internalUrl" . | quote }} }
+            - { name: ADMIN_USERNAME, value: {{ .Values.admin.username | quote }} }
+            - { name: ADMIN_EMAIL, value: {{ .Values.admin.email | quote }} }
+            - { name: WORKSPACE_NAME, value: {{ .Values.admin.workspace | quote }} }
+            - { name: TEMPLATE_DIR, value: /tmp/craft }
+            - { name: VARIABLES_FILE, value: /tmp/variables.yaml }
+            - name: ADMIN_PASSWORD
+              valueFrom: { secretKeyRef: { name: {{ $secret }}, key: admin-password } }
+            - name: CRAFT_RELAY_TOKEN
+              valueFrom: { secretKeyRef: { name: {{ $secret }}, key: mint-token } }
+          volumeMounts:
+            - { name: bootstrap, mountPath: /bootstrap }
+      volumes:
+        - name: bootstrap
+          configMap: { name: {{ $full }}-bootstrap }

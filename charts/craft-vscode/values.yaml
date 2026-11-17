@@ -1,10 +1,10 @@
-# Craft Studio: VS Code in the browser (code-server) with Claude Code and the Craft Apps
-# extension, the craft-mcp relay, and the five craft app pages.
+# Craft VS Code: VS Code in the browser (code-server) with Claude Code and the Craft Apps
+# extension, the craft-mcp relay, and the craft app pages.
 #
 # The smallest install needs only the address:
-#   helm install studio oci://ghcr.io/hayone1/charts/craft-studio \
+#   helm install studio oci://ghcr.io/hayone1/charts/craft-vscode \
 #     --set host=studio.example.com --set ingress.enabled=true
-# (or from a clone: helm install studio charts/craft-studio --set host=...)
+# (or from a clone: helm install studio charts/craft-vscode --set host=...)
 
 # The address people open, without https://. The chart serves everything on it:
 # / is VS Code, /relay/ is the relay.
@@ -18,14 +18,14 @@ auth:
   # oauth2-proxy in front of the ingress).
   mode: password
   # Empty: the chart makes a password once and keeps it across upgrades. Read it with:
-  #   kubectl get secret <release>-craft-studio -o jsonpath='{.data.password}' | base64 -d
+  #   kubectl get secret <release>-craft-vscode -o jsonpath='{.data.password}' | base64 -d
   password: ""
   # A Secret of your own with the keys password, mcp-key and mint-token (all three).
   existingSecret: ""
 
 studio:
   image:
-    repository: hayone/craft-studio
+    repository: hayone/craft-code
     tag: latest
     pullPolicy: Always
   resources:
@@ -63,7 +63,10 @@ apps:
   repository: hayone
   tag: remote
   pullPolicy: Always
-  names: [photocraft, vectorcraft, lightcraft, filmcraft, effectcraft]
+  # The apps to deploy, in the order the Craft Apps extension lists them. Leave out the ones you
+  # don't need, e.g. --set "apps.names={photocraft,filmcraft}". Each name needs an image
+  # <repository>/<name>:<tag>.
+  names: [photocraft, vectorcraft, lightcraft, filmcraft, effectcraft, wordcraft, gridcraft, deckcraft]
   # Editors that may frame the app pages. Empty: the public address and vscode-webview://*.
   embedOrigins: ""
   resources:

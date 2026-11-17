@@ -1,0 +1,15 @@
+apiVersion: v2
+name: craft-coder
+description: A Coder server where every user gets VS Code in the browser with Claude Code and the storytold craft apps
+type: application
+version: 0.1.0
+appVersion: "latest"
+home: https://github.com/hayone1/craft-code
+sources:
+  - https://github.com/hayone1/craft-code
+  - https://github.com/coder/coder
+  - https://github.com/hayone1/craft-vscode
+keywords: [coder, code-server, vscode, claude-code, mcp, craft]
+maintainers:
+  - name: hayone1
+    url: https://github.com/hayone1

@@ -1,0 +1,6 @@
+.git/
+*.tgz
+ci/
+.terraform/
+.terraform.lock.hcl
+.coder/
