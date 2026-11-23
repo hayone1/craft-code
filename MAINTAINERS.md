@@ -42,6 +42,23 @@ the template must be created and published in Railway's dashboard.
 Each host has its own account, so the GitHub Action can't press the buttons. After a change to a
 deploy file, deploy once by hand with the button and follow "After the deploy" in `README.md`.
 
+## How the repository is tested
+
+The GitHub Action in [.github/workflows/ci.yml](.github/workflows/ci.yml) checks every deploy
+option after each change:
+
+- The Action builds the Vercel and Netlify site, and checks that each app has its page and its
+  editor settings.
+- The Action checks each Helm chart, and installs each chart into a test Kubernetes cluster made
+  with [kind](https://kind.sigs.k8s.io). For craft-coder, the Action waits for the bootstrap, signs
+  in as the admin, waits for the admin's workspace, and checks that the workspace reaches the apps
+  and the relay. A `helm upgrade` with the same values must then change nothing.
+- The Action runs each Compose file with `DOMAIN=localhost`, and runs the same checks.
+- Terraform checks the format of both Coder templates, and validates both templates.
+
+The Docker image itself is built and tested in
+[hayone1/Docker_Images](https://github.com/hayone1/Docker_Images/tree/main/craft-code).
+
 ## Publish the Helm chart
 
 Raise `version` in `charts/<chart>/Chart.yaml`, where `<chart>` is `craft-vscode` or
