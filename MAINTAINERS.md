@@ -24,16 +24,18 @@ the template must be created and published in Railway's dashboard.
 6. Open the service's **Settings**:
    - Under **Networking**, turn on a public HTTP domain for port `8080`. The studio reads the
      domain from `RAILWAY_PUBLIC_DOMAIN`, so no other address setting is needed.
-   - Set the health check path to `/healthz`.
+   - Set the health check path to `/healthz`, and the health check timeout to `600` seconds. The
+     first start downloads the extensions, which takes a few minutes.
+   - Set the restart policy to **Always**, so that Railway starts the studio again after any stop.
 7. Right-click the service and add a **Volume** with the mount path `/home/coder`. The volume
    keeps the projects, the extensions and the Claude Code sign-in across restarts. The volume
    needs 5 GB or more, which the Hobby plan gives by default. The trial's 500 MB volume is too
    small for the extensions.
 8. Press **Create**, then **Publish**. Fill in the name `Craft VS Code`, a short description and the
    category **AI/ML**.
-9. Copy the template's URL, for example `https://railway.com/deploy/AbC123`. Railway picks the code
-   at the end.
-10. Replace `https://railway.com/deploy/craft-vscode` in `README.md` with that URL.
+9. Copy the template's URL. The published template is
+   `https://railway.com/deploy/craft-vs-code`, and the Railway button in `README.md` points there.
+   If you publish a new template, Railway picks a new code, so put the new URL in `README.md`.
 
 ## Check a button after a change
 

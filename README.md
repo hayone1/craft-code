@@ -34,7 +34,7 @@ that run a single container can run craft-vscode, so craft-vscode has the most d
 
 | Host | Button | What you get |
 | --- | --- | --- |
-| Railway | [![Deploy on Railway](https://railway.com/button.svg)](https://railway.com/deploy/craft-vscode) | The whole studio in one container, with a volume and an HTTPS address. |
+| Railway | [![Deploy on Railway](https://railway.com/button.svg)](https://railway.com/deploy/craft-vs-code) | The whole studio in one container, with a volume and an HTTPS address. |
 | Render | [![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/hayone1/craft-code) | The whole studio in one container, with a disk and an HTTPS address. |
 | Hostinger | [![Deploy on Hostinger](https://assets.hostinger.com/vps/deploy.svg)](https://www.hostinger.com/docker-hosting?compose_url=https://raw.githubusercontent.com/hayone1/craft-code/main/vscode/docker-compose.yml) | A VPS that runs [vscode/docker-compose.yml](vscode/docker-compose.yml), with automatic HTTPS. |
 | Vercel | [![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fhayone1%2Fcraft-code&project-name=craft-apps&env=CRAFT_APPS&envDescription=The%20craft%20apps%20to%20deploy%2C%20comma%20separated&envDefaults=%7B%22CRAFT_APPS%22%3A%22photocraft%2Cvectorcraft%2Clightcraft%2Cfilmcraft%2Ceffectcraft%2Cwordcraft%2Cgridcraft%2Cdeckcraft%22%7D) | The app pages only (see [Vercel and Netlify](#vercel-and-netlify)). |
