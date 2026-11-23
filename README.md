@@ -26,6 +26,9 @@ people who will use Craft Code.
 | [craft-vscode](docs/craft-vscode.md) | One person | One password | Railway, Render, Hostinger, your own server, Kubernetes |
 | [craft-coder](docs/craft-coder.md) | A team | Each person has an account, and can also sign in with GitHub or a company account | Hostinger, your own server, Kubernetes |
 
+If you want only the apps in a browser tab, without VS Code and without an AI agent, use the
+[buttons for the app pages only](#deploy-buttons-for-the-app-pages-only-no-vs-code-no-ai-agent).
+
 ### Deploy buttons for craft-vscode (one person)
 
 | Host | Button | What the host runs |
@@ -33,8 +36,6 @@ people who will use Craft Code.
 | Railway | [![Deploy on Railway](https://railway.com/button.svg)](https://railway.com/deploy/craft-vs-code) | One workspace in one container, with a volume for your files and an HTTPS address. |
 | Render | [![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/hayone1/craft-code) | One workspace in one container, with a disk for your files and an HTTPS address. |
 | Hostinger | [![Deploy on Hostinger](https://assets.hostinger.com/vps/deploy.svg)](https://www.hostinger.com/docker-hosting?compose_url=https://raw.githubusercontent.com/hayone1/craft-code/main/vscode/docker-compose.yml) | A virtual private server (VPS) that runs [vscode/docker-compose.yml](vscode/docker-compose.yml), with an HTTPS address. |
-| Vercel | [![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fhayone1%2Fcraft-code&project-name=craft-apps&env=CRAFT_APPS&envDescription=The%20craft%20apps%20to%20deploy%2C%20comma%20separated&envDefaults=%7B%22CRAFT_APPS%22%3A%22photocraft%2Cvectorcraft%2Clightcraft%2Cfilmcraft%2Ceffectcraft%2Cwordcraft%2Cgridcraft%2Cdeckcraft%22%7D) | The app pages only, without VS Code. See [Vercel and Netlify](docs/vercel-netlify.md). |
-| Netlify | [![Deploy to Netlify](https://www.netlify.com/img/deploy/button.svg)](https://app.netlify.com/start/deploy?repository=https://github.com/hayone1/craft-code) | The app pages only, without VS Code. See [Vercel and Netlify](docs/vercel-netlify.md). |
 
 The Hostinger button opens Hostinger's Docker hosting page, which shows the prices of the VPS
 plans. Choose a plan and pay. When the new VPS is ready, Hostinger opens its Docker Manager with the
@@ -53,8 +54,21 @@ VPS, follow
 [Use a Hostinger VPS that you already have](docs/craft-coder-own-server.md#use-a-hostinger-vps-that-you-already-have).
 
 craft-coder has only one button. craft-coder starts a new container for each person's workspace,
-and Railway, Render, Vercel and Netlify don't let an app start new containers. So craft-coder
+and Railway and Render don't let an app start new containers. So craft-coder
 needs a server with Docker, such as a Hostinger VPS, or a Kubernetes cluster.
+
+### Deploy buttons for the app pages only (no VS Code, no AI agent)
+
+Vercel and Netlify host websites, but Vercel and Netlify can't run VS Code or the relay. So these
+two buttons deploy only the craft apps as web pages. You open each app in a browser tab, and the
+files that an app opens stay on your own device. Claude Code isn't included. The page
+[Vercel and Netlify](docs/vercel-netlify.md) explains how VS Code on your own computer can still use
+the apps from such a site.
+
+| Host | Button | What the host runs |
+| --- | --- | --- |
+| Vercel | [![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fhayone1%2Fcraft-code&project-name=craft-apps&env=CRAFT_APPS&envDescription=The%20craft%20apps%20to%20deploy%2C%20comma%20separated&envDefaults=%7B%22CRAFT_APPS%22%3A%22photocraft%2Cvectorcraft%2Clightcraft%2Cfilmcraft%2Ceffectcraft%2Cwordcraft%2Cgridcraft%2Cdeckcraft%22%7D) | A website with the app pages, for example `https://craft-apps.vercel.app/photocraft/`. |
+| Netlify | [![Deploy to Netlify](https://www.netlify.com/img/deploy/button.svg)](https://app.netlify.com/start/deploy?repository=https://github.com/hayone1/craft-code) | A website with the app pages, for example `https://craft-apps.netlify.app/photocraft/`. |
 
 ## After the deploy
 
