@@ -16,12 +16,19 @@ the template must be created and published in Railway's dashboard.
    Also add `CRAFT_APPS` with the value
    `photocraft,vectorcraft,lightcraft,filmcraft,effectcraft,wordcraft,gridcraft,deckcraft`.
    People who deploy the template can then remove the apps that they don't want.
+   Type each name with no space before or after it. Railway keeps a space that is typed after a
+   name, and a setting called `CRAFT_APPS ` (with the space) doesn't reach the extension. The
+   image reads such a setting anyway since 2026-11-23, but the template should still be right.
+   Add a description to `CRAFT_APPS`, for example "The craft apps to show, comma separated", so
+   that people see the variable on the deploy page.
 6. Open the service's **Settings**:
    - Under **Networking**, turn on a public HTTP domain for port `8080`. The studio reads the
      domain from `RAILWAY_PUBLIC_DOMAIN`, so no other address setting is needed.
    - Set the health check path to `/healthz`.
 7. Right-click the service and add a **Volume** with the mount path `/home/coder`. The volume
-   keeps the projects, the extensions and the Claude Code sign-in across restarts.
+   keeps the projects, the extensions and the Claude Code sign-in across restarts. The volume
+   needs 5 GB or more, which the Hobby plan gives by default. The trial's 500 MB volume is too
+   small for the extensions.
 8. Press **Create**, then **Publish**. Fill in the name `Craft VS Code`, a short description and the
    category **AI/ML**.
 9. Copy the template's URL, for example `https://railway.com/deploy/AbC123`. Railway picks the code

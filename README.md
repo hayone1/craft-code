@@ -2,7 +2,7 @@
 
 Craft Code is VS Code in the browser with Claude Code and the
 [storytold](https://github.com/storytold) craft apps (PhotoCraft, VectorCraft, LightCraft,
-FilmCraft and EffectCraft) already set up. You open a web address, sign in, and click an app. The
+FilmCraft, EffectCraft, WordCraft, GridCraft and DeckCraft) already set up. You open a web address, sign in, and click an app. The
 app opens in an editor panel. Claude Code works in the panel next to the app and can draw, edit
 and save in the app while you watch.
 
@@ -297,6 +297,10 @@ is VS Code on the desktop.
   files of 100 MB or more, so a bigger VectorCraft release would break the Vercel build until the
   build splits the file.
 - **The hosts cost money.** Railway, Render and Hostinger need a paid plan for a volume or a VPS.
+  On Railway, use the Hobby plan or higher. The free trial gives a service 1 GB of memory and a
+  500 MB volume, which is too little: Railway stops the studio when it runs out of memory, and
+  the extensions don't fit on the volume. The studio prints a warning in its log when the memory
+  limit is under 2 GB or less than 1 GB of the home volume is free.
   A craft-vscode studio needs about 1 GB of memory when idle and 2 to 4 GB while Claude Code
   works.
 
