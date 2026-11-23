@@ -33,6 +33,26 @@ The Coder container can use the server's Docker, because Coder starts each works
 container. So anyone who can edit Coder templates can control Docker on the server. By default,
 only the admin can edit Coder templates.
 
+## Use a Hostinger VPS that you already have
+
+The Hostinger button is for people who don't have a Hostinger VPS yet. The button opens
+Hostinger's Docker hosting page, which shows the prices of the VPS plans. After you choose a plan
+and pay, Hostinger prepares the VPS and opens the Docker Manager with the craft-coder file already
+filled in.
+
+If you already have a Hostinger VPS, skip the button, and give the file to the Docker Manager
+yourself:
+
+1. Sign in to Hostinger, open **VPS**, and click **Manage** next to your server.
+2. Click **Docker Manager** in the menu on the left. If Hostinger asks you to install Docker
+   first, accept.
+3. Click **Compose**, then **Compose from URL**.
+4. Paste this address:
+   `https://raw.githubusercontent.com/hayone1/craft-code/main/coder/docker-compose.yml`.
+5. Add the settings from the table under [Docker Compose](#docker-compose) as environment
+   variables, if you want them. Every setting is optional.
+6. Deploy, and wait a few minutes for the first start.
+
 ## Helm chart (Kubernetes)
 
 The chart in [charts/craft-coder](../charts/craft-coder) runs craft-coder in a Kubernetes cluster. The
