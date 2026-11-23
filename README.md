@@ -36,11 +36,21 @@ people who will use Craft Code.
 | Vercel | [![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fhayone1%2Fcraft-code&project-name=craft-apps&env=CRAFT_APPS&envDescription=The%20craft%20apps%20to%20deploy%2C%20comma%20separated&envDefaults=%7B%22CRAFT_APPS%22%3A%22photocraft%2Cvectorcraft%2Clightcraft%2Cfilmcraft%2Ceffectcraft%2Cwordcraft%2Cgridcraft%2Cdeckcraft%22%7D) | The app pages only, without VS Code. See [Vercel and Netlify](docs/vercel-netlify.md). |
 | Netlify | [![Deploy to Netlify](https://www.netlify.com/img/deploy/button.svg)](https://app.netlify.com/start/deploy?repository=https://github.com/hayone1/craft-code) | The app pages only, without VS Code. See [Vercel and Netlify](docs/vercel-netlify.md). |
 
+The Hostinger button opens Hostinger's Docker hosting page, which shows the prices of the VPS
+plans. Choose a plan and pay. When the new VPS is ready, Hostinger opens its Docker Manager with the
+Craft Code file already filled in. If you already have a Hostinger VPS, follow
+[Use a Hostinger VPS that you already have](docs/craft-vscode-own-server.md#use-a-hostinger-vps-that-you-already-have)
+instead.
+
 ### Deploy buttons for craft-coder (a team)
 
 | Host | Button | What the host runs |
 | --- | --- | --- |
 | Hostinger | [![Deploy on Hostinger](https://assets.hostinger.com/vps/deploy.svg)](https://www.hostinger.com/docker-hosting?compose_url=https://raw.githubusercontent.com/hayone1/craft-code/main/coder/docker-compose.yml) | A VPS that runs [coder/docker-compose.yml](coder/docker-compose.yml), with an HTTPS address. |
+
+The Hostinger button works the same way as the craft-vscode button. If you already have a Hostinger
+VPS, follow
+[Use a Hostinger VPS that you already have](docs/craft-coder-own-server.md#use-a-hostinger-vps-that-you-already-have).
 
 craft-coder has only one button. craft-coder starts a new container for each person's workspace,
 and Railway, Render, Vercel and Netlify don't let an app start new containers. So craft-coder
