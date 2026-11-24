@@ -16,3 +16,6 @@ services:
       # The sign-in password: Render makes one. Find it under the service's Environment tab.
       - key: PASSWORD
         generateValue: true
+      # The apps that VS Code lists, with commas between them. Remove an app to hide the app.
+      - key: CRAFT_APPS
+        value: photocraft,vectorcraft,lightcraft,filmcraft,effectcraft,wordcraft,gridcraft,deckcraft
