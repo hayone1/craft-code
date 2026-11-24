@@ -8,7 +8,7 @@ and less memory on the server.
 | --- | --- |
 | Docker Compose and Hostinger | Set `PHOTOCRAFT=off` to leave PhotoCraft out. The same works with `VECTORCRAFT`, `LIGHTCRAFT`, `FILMCRAFT`, `EFFECTCRAFT`, `WORDCRAFT`, `GRIDCRAFT` and `DECKCRAFT`. On Hostinger, add the setting under **Environment variables** before you deploy. |
 | Helm (both charts) | Set `apps.names` to the apps that you want, in the order that VS Code should list the apps. For example, use `--set "apps.names={photocraft,filmcraft}"`. |
-| Railway and Render | Set the variable `CRAFT_APPS` to the apps that you want, separated by commas, for example `photocraft,filmcraft`. On Railway, the deploy page shows `CRAFT_APPS` with all eight apps, and you can remove the apps that you don't want. On Render, add `CRAFT_APPS` under **Environment** after the deploy, and the workspace restarts. |
+| Railway and Render | Set the variable `CRAFT_APPS` to the apps that you want, separated by commas, for example `photocraft,filmcraft`. On Railway, the deploy page shows `CRAFT_APPS` with all eight apps, and you can remove the apps that you don't want. On Render, `CRAFT_APPS` starts with all eight apps. Change the variable under **Environment**, and Render restarts the workspace. |
 | Vercel and Netlify | Vercel's deploy page fills `CRAFT_APPS` with all eight apps, and you can remove the apps that you don't want. Netlify's deploy page shows an empty `CRAFT_APPS` field: leave the field empty for all eight apps, or type the apps that you want, for example `photocraft,filmcraft`. To change the apps later, change `CRAFT_APPS` in the site's environment variables, and deploy the site again. |
 
 At least one app must stay on. With Docker Compose, the `setup` container stops with the message
